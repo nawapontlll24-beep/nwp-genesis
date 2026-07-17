@@ -311,9 +311,10 @@ var AIBrain = {
             resolve(result);
           } catch(innerErr) {
             console.error('Process inner error:', innerErr);
+            var innerErrMsg = (innerErr && innerErr.message) ? innerErr.message : String(innerErr);
             resolve({
               type: 'error',
-              text: 'ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่',
+              text: 'ขออภัยครับ เกิดข้อผิดพลาด: ' + innerErrMsg + '\nกรุณาลองใหม่',
               source: 'Genesis',
               intent: 'error',
               confidence: 0,
@@ -324,9 +325,10 @@ var AIBrain = {
       });
     } catch(e) {
       console.error('Process outer error:', e);
+      var outerErrMsg = (e && e.message) ? e.message : String(e);
       return Promise.resolve({
         type: 'error',
-        text: 'ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่',
+        text: 'ขออภัยครับ เกิดข้อผิดพลาด: ' + outerErrMsg + '\nกรุณาลองใหม่',
         source: 'Genesis',
         intent: 'error',
         confidence: 0,

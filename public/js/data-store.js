@@ -11,9 +11,14 @@ var _useCloud = false;
 
 function _initSupabase() {
   if (_supabase) return _supabase;
-  if (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
-    _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    _useCloud = true;
+  try {
+    if (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
+      _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      _useCloud = true;
+    }
+  } catch (e) {
+    console.warn('Supabase init failed:', e.message);
+    _supabase = null;
   }
   return _supabase;
 }

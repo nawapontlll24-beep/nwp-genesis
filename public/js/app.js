@@ -792,6 +792,7 @@ document.addEventListener('DOMContentLoaded', function() {
   try { initMatrixRain(); } catch(e) { console.warn('Matrix rain error:', e); }
   try { initVoice(); } catch(e) { console.warn('Voice init error:', e); }
   try { AIBrain.init(); } catch(e) { console.warn('AIBrain init error:', e); }
+  try { Router.init(); } catch(e) { console.warn('Router init error:', e); }
   try { DataStore.syncFromCloud(); } catch(e) { console.warn('Cloud sync error:', e); }
 
   var btnSend = document.getElementById('btn-send');
@@ -834,5 +835,5 @@ document.addEventListener('DOMContentLoaded', function() {
   // ทดสอบเสียงทันที
   setTimeout(function() { testVoice(); }, 2000);
 
-  addMessage('system', '⚡ Genesis v3.0 พร้อมทำงาน\n\n🎯 ลองพิมพ์:\n• "สวัสดี" - ทักทาย\n• "สร้างแผนการสอน" - สร้างเอกสาร\n• "กติกาฟุตบอล" - ถามความรู้\n• "สรุปงานประจำเดือน" - รายงาน\n• "สวัสดีครับ วันนี้เป็นไงบ้าง" - คุยเล่น');
+  addWelcome();
 });
