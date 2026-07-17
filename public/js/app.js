@@ -372,21 +372,41 @@ function sendMessage() {
     }, 10000);
 
     try {
-      AIBrain.process(text, {
+      var processResult = AIBrain.process(text, {
         onThinking: function(steps) {
           showThinkingSteps(steps);
         }
-      }).then(function(result) {
+      });
+
+      if (!processResult || typeof processResult.then !== 'function') {
+        console.error('AIBrain.process did not return a Promise:', processResult);
+        clearTimeout(safetyTimer);
+        removeThinking();
+        addMessage('ขออภัยครับ ระบบประมวลผลผิดพลาด (ไม่ได้คืนค่า Promise) กรุณาลองใหม่', 'ai');
+        isProcessing = false;
+        return;
+      }
+
+      processResult.then(function(result) {
         setTimeout(function() {
           clearTimeout(safetyTimer);
           removeThinking();
+
+          if (!result || !result.text) {
+            console.error('Result has no text:', result);
+            addMessage('ขออภัยครับ ผลลัพธ์ว่างเปล่า กรุณาลองใหม่', 'ai');
+            isProcessing = false;
+            return;
+          }
 
           var deptName = '';
           var deptIcon = 'fas fa-building';
           if (result && result.source) {
             deptName = result.source;
-            var dept = Departments.getSub(result.source) || (result.deptId ? Departments.getSub(result.deptId) : null);
-            if (dept) { deptName = dept.name; deptIcon = dept.icon; }
+            try {
+              var dept = Departments.getSub(result.source) || (result.deptId ? Departments.getSub(result.deptId) : null);
+              if (dept) { deptName = dept.name; deptIcon = dept.icon; }
+            } catch(de) { console.warn('Dept lookup error:', de); }
           }
 
           addMessage(result.text, 'ai', {
@@ -409,21 +429,20 @@ function sendMessage() {
 
           isProcessing = false;
 
-          // Speak after unlocking isProcessing to prevent UI freeze
-          try { speak(result.text.substring(0, 200)); } catch(e) {}
+          try { speak(result.text.substring(0, 200)); } catch(e) { console.warn('Speak error:', e); }
         }, 500);
       }).catch(function(err) {
         clearTimeout(safetyTimer);
-        console.error('Process error:', err);
+        console.error('Process Promise rejected:', err);
         removeThinking();
-        addMessage('ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่', 'ai');
+        addMessage('ขออภัยครับ เกิดข้อผิดพลาด: ' + (err.message || err) + '\nกรุณาลองใหม่', 'ai');
         isProcessing = false;
       });
     } catch(e) {
       clearTimeout(safetyTimer);
       console.error('Process threw error:', e);
       removeThinking();
-      addMessage('ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่', 'ai');
+      addMessage('ขออภัยครับ เกิดข้อผิดพลาด: ' + (e.message || e) + '\nกรุณาลองใหม่', 'ai');
       isProcessing = false;
     }
   } else {
