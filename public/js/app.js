@@ -431,6 +431,12 @@ function sendMessage() {
   var text = input.value.trim();
   if (!text && attachedFiles.length === 0) return;
 
+  // สลับกลับแท็บแชทอัตโนมัติถ้าไม่ได้อยู่ในแท็บแชท
+  var activeTab = document.querySelector('.tab-btn.active');
+  if (activeTab && activeTab.dataset.tab !== 'chat') {
+    switchTab('chat');
+  }
+
   isProcessing = true;
   input.value = '';
   input.style.height = 'auto';
@@ -639,10 +645,10 @@ function switchTab(tabName) {
   var btn = document.querySelector('[data-tab="' + tabName + '"]');
   if (btn) btn.classList.add('active');
 
-  var chatMain = document.querySelector('.chat-main');
-  var quickCmds = document.querySelector('.quick-commands');
-  if (chatMain) chatMain.style.display = (tabName === 'chat') ? '' : 'none';
-  if (quickCmds) quickCmds.style.display = (tabName === 'chat') ? '' : 'none';
+  var chatMessages = document.getElementById('chat-messages');
+  if (chatMessages) {
+    chatMessages.style.display = (tabName === 'chat') ? '' : 'none';
+  }
 
   if (tabName === 'docs') loadDocuments();
   if (tabName === 'agents') loadAgents();
@@ -753,26 +759,26 @@ function loadDashboard() {
 
   var html = '<div class="dashboard-grid">';
 
-  // กล่องสถิติ
-  html += '<div class="stat-box">';
+  // กล่องสถิติ — กดได้ ส่งคำสั่ง AI ได้
+  html += '<div class="stat-box clickable" onclick="sendDashCommand(\'แสดงเอกสารทั้งหมด\')">';
   html += '<div class="stat-icon"><i class="fas fa-file-alt"></i></div>';
   html += '<div class="stat-number">' + stats.totalDocs + '</div>';
   html += '<div class="stat-label">เอกสารทั้งหมด</div>';
   html += '</div>';
 
-  html += '<div class="stat-box">';
+  html += '<div class="stat-box clickable" onclick="sendDashCommand(\'แสดงเอกสารเดือนนี้\')">';
   html += '<div class="stat-icon"><i class="fas fa-calendar-check"></i></div>';
   html += '<div class="stat-number">' + stats.monthDocs + '</div>';
   html += '<div class="stat-label">เอกสารเดือนนี้</div>';
   html += '</div>';
 
-  html += '<div class="stat-box">';
+  html += '<div class="stat-box clickable" onclick="sendDashCommand(\'แสดงงานค้าง\')">';
   html += '<div class="stat-icon pending"><i class="fas fa-clock"></i></div>';
   html += '<div class="stat-number">' + stats.pendingTasks + '</div>';
   html += '<div class="stat-label">งานค้าง</div>';
   html += '</div>';
 
-  html += '<div class="stat-box">';
+  html += '<div class="stat-box clickable" onclick="sendDashCommand(\'แสดงงานเสร็จแล้ว\')">';
   html += '<div class="stat-icon done"><i class="fas fa-check-circle"></i></div>';
   html += '<div class="stat-number">' + stats.completedTasks + '</div>';
   html += '<div class="stat-label">งานเสร็จแล้ว</div>';
@@ -780,24 +786,27 @@ function loadDashboard() {
 
   html += '</div>';
 
-  // Workflow ที่กำลังทำ
+  // Workflow ที่กำลังทำ — กดปุ่มลูกศรส่ง AI
   html += '<div class="dash-section">';
   html += '<h3><i class="fas fa-cogs"></i> Workflow ที่กำลังทำ (' + workflows.length + ')</h3>';
   if (workflows.length > 0) {
     workflows.forEach(function(wf) {
+      var pct = Math.round((wf.currentStep / wf.steps.length) * 100);
+      var currentStepName = wf.steps[wf.currentStep] || 'ขั้นตอนสุดท้าย';
       html += '<div class="wf-item">';
       html += '<div class="wf-icon">' + wf.icon + '</div>';
       html += '<div class="wf-info">';
       html += '<div class="wf-name">' + wf.name + '</div>';
+      html += '<div class="wf-step-name">' + currentStepName + '</div>';
       html += '<div class="wf-progress">';
-      html += '<div class="progress-bar"><div class="progress-fill" style="width:' + Math.round((wf.currentStep / wf.steps.length) * 100) + '%"></div></div>';
+      html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>';
       html += '<span>' + wf.currentStep + '/' + wf.steps.length + '</span>';
       html += '</div></div>';
-      html += '<button class="wf-next" onclick="advanceWorkflow(\'' + wf.id + '\')"><i class="fas fa-arrow-right"></i></button>';
+      html += '<button class="wf-next" onclick="advanceWorkflowAI(\'' + wf.id + '\', \'' + wf.name.replace(/'/g, "\\'") + '\')" title="ทำขั้นตอนถัดไปผ่าน AI"><i class="fas fa-arrow-right"></i></button>';
       html += '</div>';
     });
   } else {
-    html += '<p class="empty-msg">ไม่มี workflow ที่กำลังทำ</p>';
+    html += '<p class="empty-msg">ไม่มี workflow ที่กำลังทำ — ลองพิมพ์ "จัดกีฬาสี" เพื่อเริ่ม workflow ใหม่</p>';
   }
   html += '</div>';
 
@@ -822,6 +831,18 @@ function loadDashboard() {
   });
   html += '</div></div>';
 
+  // ปุ่มลัดสั่งงาน
+  html += '<div class="dash-section">';
+  html += '<h3><i class="fas fa-bolt"></i> สั่งงานด่วน</h3>';
+  html += '<div class="dash-shortcuts">';
+  html += '<button class="dash-shortcut-btn" onclick="sendDashCommand(\'จัดกีฬาสี\')"><i class="fas fa-trophy"></i> จัดกีฬาสี</button>';
+  html += '<button class="dash-shortcut-btn" onclick="sendDashCommand(\'เขียนแผนการสอนสุขศึกษา ป.5\')"><i class="fas fa-book"></i> แผนการสอน</button>';
+  html += '<button class="dash-shortcut-btn" onclick="sendDashCommand(\'เขียนหนังสือราชการ เรื่อง ขอความเห็นชอบ\')"><i class="fas fa-file-signature"></i> หนังสือราชการ</button>';
+  html += '<button class="dash-shortcut-btn" onclick="sendDashCommand(\'ขอจัดสรรงบประมาณ ซื้ออุปกรณ์กีฬา\')"><i class="fas fa-money-bill"></i> ขอจัดสรรงบ</button>';
+  html += '<button class="dash-shortcut-btn" onclick="sendDashCommand(\'ทำคำสั่งแต่งตั้งเจ้าหน้าที่\')"><i class="fas fa-stamp"></i> คำสั่งแต่งตั้ง</button>';
+  html += '<button class="dash-shortcut-btn" onclick="sendDashCommand(\'กติกาฟุตบอล\')"><i class="fas fa-futbol"></i> กติกากีฬา</button>';
+  html += '</div></div>';
+
   container.innerHTML = html;
 }
 
@@ -833,6 +854,24 @@ function advanceWorkflow(wfId) {
   } else {
     showToast(result.message, 'info');
     loadDashboard();
+  }
+}
+
+// ส่งคำสั่งจาก Dashboard ไปให้ AI ประมวลผลในแชท
+function sendDashCommand(text) {
+  var input = document.getElementById('chat-input');
+  if (input) input.value = text;
+  sendMessage();
+}
+
+// สั่ง workflow ขั้นตอนถัดไปผ่าน AI
+function advanceWorkflowAI(wfId, wfName) {
+  var result = Workflow.nextStep(wfId);
+  if (result.success) {
+    sendDashCommand('กำลังทำ workflow "' + wfName + '" ขั้นตอนถัดไป: ' + result.message);
+  } else {
+    showToast(result.message, 'info');
+    sendDashCommand('workflow "' + wfName + '" ' + result.message);
   }
 }
 
