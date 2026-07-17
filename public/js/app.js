@@ -398,8 +398,6 @@ function sendMessage() {
             title: result.docData ? result.docData.title : 'เอกสาร'
           });
 
-          try { speak(result.text.substring(0, 200)); } catch(e) {}
-
           var sub = document.getElementById('header-subtitle');
           if (sub) sub.textContent = 'ออนไลน์ - ' + (result.intent || 'ready');
 
@@ -410,6 +408,9 @@ function sendMessage() {
           }
 
           isProcessing = false;
+
+          // Speak after unlocking isProcessing to prevent UI freeze
+          try { speak(result.text.substring(0, 200)); } catch(e) {}
         }, 500);
       }).catch(function(err) {
         clearTimeout(safetyTimer);

@@ -83,7 +83,11 @@ http.createServer(async function(req, res) {
   fs.readFile(filePath, function(err, data) {
     if (err) { res.writeHead(404); res.end('Not found'); return; }
     var ext = path.extname(filePath);
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'text/plain' });
+    var headers = { 'Content-Type': MIME[ext] || 'text/plain' };
+    if (ext === '.html') {
+      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    }
+    res.writeHead(200, headers);
     res.end(data);
   });
 }).listen(PORT, function() {
