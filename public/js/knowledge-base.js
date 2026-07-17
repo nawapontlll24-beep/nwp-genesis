@@ -1010,7 +1010,22 @@ var KnowledgeBase = {
       }
     }.bind(this));
 
-    return results.length > 0 ? results : null;
+    if (results.length > 0) return results;
+
+    if (typeof DataStore !== 'undefined') {
+      var learned = DataStore.getLearnedInfo(query);
+      if (learned && learned.length > 0) {
+        learned.forEach(function(item) {
+          results.push({
+            source: 'ข้อมูลที่เรียนรู้: ' + item.topic,
+            content: { title: item.topic, detail: item.content, source_url: item.source }
+          });
+        });
+        return results;
+      }
+    }
+
+    return null;
   },
 
   formatAnswer: function(results) {

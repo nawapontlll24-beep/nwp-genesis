@@ -48,8 +48,8 @@ var DataStore = {
     var client = _initSupabase();
     if (!client) return;
     try {
-      var tables = ['documents', 'commands', 'notifications'];
-      var keys = ['documents', 'commands', 'notifications'];
+      var tables = ['documents', 'commands', 'notifications', 'learned'];
+      var keys = ['documents', 'commands', 'notifications', 'learned'];
       for (var i = 0; i < tables.length; i++) {
         var result = await client.from(tables[i]).select('*');
         if (result.data && result.data.length > 0) {
@@ -58,21 +58,34 @@ var DataStore = {
           local.forEach(function(item) { localIds[item.id] = true; });
           result.data.forEach(function(row) {
             if (!localIds[row.id]) {
-              var mapped = {
-                id: row.id,
-                type: row.type,
-                title: row.title,
-                content: row.content,
-                dept: row.dept,
-                deptId: row.dept_id,
-                mainDeptId: row.main_dept_id,
-                status: row.status,
-                teacherName: row.teacher_name,
-                schoolName: row.school_name,
-                url: row.url,
-                createdAt: row.created_at,
-                updatedAt: row.updated_at
-              };
+              var mapped;
+              if (tables[i] === 'learned') {
+                mapped = {
+                  id: row.id,
+                  topic: row.topic || '',
+                  content: row.content || '',
+                  source: row.source || 'web_search',
+                  keywords: row.keywords || [],
+                  createdAt: row.created_at,
+                  updatedAt: row.updated_at
+                };
+              } else {
+                mapped = {
+                  id: row.id,
+                  type: row.type,
+                  title: row.title,
+                  content: row.content,
+                  dept: row.dept,
+                  deptId: row.dept_id,
+                  mainDeptId: row.main_dept_id,
+                  status: row.status,
+                  teacherName: row.teacher_name,
+                  schoolName: row.school_name,
+                  url: row.url,
+                  createdAt: row.created_at,
+                  updatedAt: row.updated_at
+                };
+              }
               local.push(mapped);
             }
           });
@@ -286,6 +299,58 @@ var DataStore = {
   },
 
   // ==========================================
+  // ข้อมูลที่เรียนรู้ (Learned Knowledge)
+  // ==========================================
+  saveLearnedInfo: function(data) {
+    var learned = this._get('learned');
+    var entry = {
+      id: this._generateId(),
+      topic: data.topic || '',
+      content: data.content || '',
+      source: data.source || 'web_search',
+      keywords: data.keywords || [],
+      createdAt: new Date().toISOString()
+    };
+    var existing = learned.find(function(l) {
+      return l.topic.toLowerCase() === entry.topic.toLowerCase();
+    });
+    if (existing) {
+      existing.content = entry.content;
+      existing.source = entry.source;
+      existing.keywords = entry.keywords;
+      existing.updatedAt = new Date().toISOString();
+    } else {
+      learned.push(entry);
+    }
+    this._set('learned', learned);
+    this._pushToCloud('learned', entry);
+    return entry;
+  },
+
+  getLearnedInfo: function(query) {
+    var learned = this._get('learned');
+    if (!query) return learned;
+    var q = query.toLowerCase();
+    return learned.filter(function(l) {
+      if (l.topic && l.topic.toLowerCase().indexOf(q) !== -1) return true;
+      if (l.content && l.content.toLowerCase().indexOf(q) !== -1) return true;
+      if (l.keywords && l.keywords.length > 0) {
+        return l.keywords.some(function(kw) {
+          return kw.toLowerCase().indexOf(q) !== -1;
+        });
+      }
+      return false;
+    });
+  },
+
+  deleteLearned: function(id) {
+    var learned = this._get('learned');
+    var filtered = learned.filter(function(l) { return l.id !== id; });
+    this._set('learned', filtered);
+    this._deleteFromCloud('learned', id);
+  },
+
+  // ==========================================
   // จัดการไฟล์แนบ
   // ==========================================
   addAttachment: function(commandId, files) {
@@ -366,6 +431,7 @@ var DataStore = {
       documents: this._get('documents'),
       commands: this._get('commands'),
       notifications: this._get('notifications'),
+      learned: this._get('learned'),
       memory: JSON.parse(localStorage.getItem('genesis_memory') || '{}'),
       workflows: JSON.parse(localStorage.getItem('genesis_workflows') || '[]')
     };
@@ -387,12 +453,17 @@ var DataStore = {
       var self3 = this;
       data.notifications.forEach(function(n) { self3._pushToCloud('notifications', n); });
     }
+    if (data.learned) {
+      this._set('learned', data.learned);
+      var self4 = this;
+      data.learned.forEach(function(l) { self4._pushToCloud('learned', l); });
+    }
     if (data.memory) localStorage.setItem('genesis_memory', JSON.stringify(data.memory));
     if (data.workflows) localStorage.setItem('genesis_workflows', JSON.stringify(data.workflows));
   },
 
   clearAll: function() {
-    var keys = ['documents', 'commands', 'notifications'];
+    var keys = ['documents', 'commands', 'notifications', 'learned'];
     keys.forEach(function(key) {
       localStorage.removeItem('genesis_' + key);
     });

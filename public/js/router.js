@@ -84,6 +84,30 @@ var Router = {
       handler: 'event_handler'
     });
 
+    // ====== หมวด 6: ค้นหาอินเทอร์เน็ต (Web Search) ======
+    routes.push({
+      intent: 'web_search',
+      patterns: [
+        /^ค้นหา|ค้นหาเรื่อง|ค้นหาข้อมูล|ค้นข้อมูล/i,
+        /^หาข้อมูล|หาข้อมูลเรื่อง|หาข้อมูลเกี่ยวกับ/i,
+        /^เสิร์ช|search for|search about/i
+      ],
+      department: null,
+      handler: 'web_search_handler'
+    });
+
+    // ====== หมวด 7: สั่งจดจำ (Learn) ======
+    routes.push({
+      intent: 'learn',
+      patterns: [
+        /^จำไว้ว่า|^จำว่า|^จดจำว่า/i,
+        /^ให้จำว่า|^ให้จดจำว่า|^ให้จำไว้ว่า/i,
+        /^บันทึกว่า|^จดไว้ว่า|^จดว่า/i
+      ],
+      department: null,
+      handler: 'learn_handler'
+    });
+
     return routes;
   },
 
@@ -270,6 +294,18 @@ var Router = {
         dept: 'ฝ่ายวิจัย',
         action: 'กำลังค้นคว้าและวิเคราะห์ข้อมูล',
         icon: 'fas fa-search'
+      });
+    } else if (intent === 'web_search') {
+      steps.push({
+        dept: 'Web Search',
+        action: 'กำลังค้นหาจากอินเทอร์เน็ต...',
+        icon: 'fas fa-globe'
+      });
+    } else if (intent === 'learn') {
+      steps.push({
+        dept: 'Genesis',
+        action: 'กำลังบันทึกข้อมูลใหม่...',
+        icon: 'fas fa-brain'
       });
     }
 

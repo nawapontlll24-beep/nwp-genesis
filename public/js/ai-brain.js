@@ -1,5 +1,5 @@
 var AIBrain = {
-  version: '3.0.0',
+  version: '4.0.0',
   personality: {
     name: 'Genesis',
     role: 'เลขา AI โรงเรียนหนองพอกพัฒนาประชานุสรณ์',
@@ -79,8 +79,8 @@ var AIBrain = {
       'ตอนนี้เป็นปีการศึกษา 2569 ภาคเรียนที่ 1 ครับ มีนักเรียนประมาณ 380 คน'
     ],
     help: [
-      'ผมช่วยได้หลายอย่างเลยครับ:\n\n💬 คุยทั่วไป - ถามอะไรก็ได้ ผมคุยเป็นเพื่อนได้\n❓ ถามคำถาม - กติกากีฬา อาหาร กฎหมาย ข้อมูลโรงเรียน\n📄 สั่งงาน - แผนการสอน หนังสือราชการ บันทึก รายงาน คำสั่ง\n🏃 จัดงาน - กีฬาสี วันเด็ก ทัศนศึกษา\n💰 งบประมาณ - ขอจัดสรร จัดซื้อ\n\nลองพิมพ์ดูเลยครับ!',
-      'ลองพิมพ์อะไรก็ได้ครับ เช่น:\n• "กติกาฟุตบอล" - ผมตอบได้เลย\n• "เขียนแผนการสอนป.5" - ผมสร้างเอกสารให้\n• "จัดกีฬาสี" - ผมจัด workflow ให้\n• หรือจะคุยเล่นก็ได้นะครับ!'
+      'ผมช่วยได้หลายอย่างเลยครับ:\n\n💬 คุยทั่วไป - ถามอะไรก็ได้ ผมคุยเป็นเพื่อนได้\n❓ ถามคำถาม - กติกากีฬา อาหาร กฎหมาย ข้อมูลโรงเรียน\n📄 สั่งงาน - แผนการสอน หนังสือราชการ บันทึก รายงาน คำสั่ง\n🏃 จัดงาน - กีฬาสี วันเด็ก ทัศนศึกษา\n💰 งบประมาณ - ขอจัดสรร จัดซื้อ\n🔍 ค้นหาอินเทอร์เน็ต - "ค้นหาเรื่อง..."\n📝 จดจำข้อมูล - "จำไว้ว่า..."\n\nลองพิมพ์ดูเลยครับ!',
+      'ลองพิมพ์อะไรก็ได้ครับ เช่น:\n• "กติกาฟุตบอล" - ผมตอบได้เลย\n• "เขียนแผนการสอนป.5" - ผมสร้างเอกสารให้\n• "จัดกีฬาสี" - ผมจัด workflow ให้\n• "ค้นหาเรื่อง โรคเบาหวาน" - ผมค้นหาจากอินเทอร์เน็ตให้\n• "จำไว้ว่า โรงเรียนเปิดเทอม 16 พ.ค." - ผมจดจำไว้ให้\n• หรือจะคุยเล่นก็ได้นะครับ!'
     ],
     howAreYou: [
       'ผมสบายดีครับ ขอบคุณที่ถาม! วันนี้คุณครูเป็นอย่างไรบ้างครับ?',
@@ -208,7 +208,33 @@ var AIBrain = {
       }
     }
 
-    // ====== ประเภท 3: ค้นหา/วิจัย (Research) ======
+    // ====== ประเภท 3: ค้นหาอินเทอร์เน็ต (Web Search) ======
+    var webSearchPatterns = [
+      /^ค้นหา|ค้นหาเรื่อง|ค้นหาข้อมูล|ค้นข้อมูล/i,
+      /^หาข้อมูล|หาข้อมูลเรื่อง|หาข้อมูลเกี่ยวกับ/i,
+      /^เสิร์ช|search for|search about/i
+    ];
+
+    for (var i = 0; i < webSearchPatterns.length; i++) {
+      if (webSearchPatterns[i].test(text)) {
+        return { type: 'web_search', confidence: 0.95 };
+      }
+    }
+
+    // ====== ประเภท 4: สั่งจดจำ (Learn) ======
+    var learnPatterns = [
+      /^จำไว้ว่า|^จำว่า|^จดจำว่า/i,
+      /^ให้จำว่า|^ให้จดจำว่า|^ให้จำไว้ว่า/i,
+      /^บันทึกว่า|^จดไว้ว่า|^จดว่า/i
+    ];
+
+    for (var i = 0; i < learnPatterns.length; i++) {
+      if (learnPatterns[i].test(text)) {
+        return { type: 'learn', confidence: 0.95 };
+      }
+    }
+
+    // ====== ประเภท 5: ค้นหา/วิจัย (Research) ======
     var researchPatterns = [
       /ค้นหา|ค้นคว้า|หาข้อมูล|สืบค้น|วิจัย|สำรวจ/i,
       /วิเคราะห์|เปรียบเทียบ|สรุปผล|ประเมินผล/i,
@@ -295,6 +321,10 @@ var AIBrain = {
               result = self.handleQuestion(text, deptResult);
             } else if (intent.type === 'create_document') {
               result = self.handleCreate(text, deptResult);
+            } else if (intent.type === 'web_search') {
+              result = self.handleWebSearch(text);
+            } else if (intent.type === 'learn') {
+              result = self.handleLearn(text);
             } else if (intent.type === 'research') {
               result = self.handleResearch(text, deptResult);
             } else if (intent.type === 'conversation') {
@@ -367,14 +397,19 @@ var AIBrain = {
       console.error('handleQuestion error:', e);
     }
 
-    // ถ้าไม่พบ
-    return {
-      type: 'answer',
-      text: 'ขออภัยครับ ยังไม่มีข้อมูลในหมวดนี้ในฐานข้อมูล\n\n💡 ลองถามเกี่ยวกับ:\n• กีฬา (ฟุตบอล บาส วอลเลย์ ตะกร้อ วิ่ง)\n• สุขภาพ (โภชนาการ โรค ออกกำลังกาย อนามัย)\n• กฎหมาย (พ.ร.บ.การศึกษา ระเบียบ)\n• ข้อมูลโรงเรียน (ปฏิทิน วันหยุด)',
-      source: 'ไม่พบข้อมูล',
-      hasDocument: false,
-      canDownload: false
-    };
+    // ถ้าไม่พบ — ลองค้นอินเทอร์เน็ตอัตโนมัติ
+    var self = this;
+    return this._autoSearchOnline(text).then(function(searchResult) {
+      return searchResult;
+    }).catch(function() {
+      return {
+        type: 'answer',
+        text: 'ขออภัยครับ ยังไม่มีข้อมูลในฐานข้อมูลและไม่สามารถค้นหาอินเทอร์เน็ตได้ในขณะนี้\n\n💡 ลองถามใหม่ หรือพิมพ์ "ค้นหา [หัวข้อ]" เพื่อค้นหาจากอินเทอร์เน็ตครับ',
+        source: 'ไม่พบข้อมูล',
+        hasDocument: false,
+        canDownload: false
+      };
+    });
   },
 
   // ==========================================
@@ -447,6 +482,182 @@ var AIBrain = {
       hasDocument: false,
       canDownload: false
     };
+  },
+
+  // ==========================================
+  // จัดการค้นหาอินเทอร์เน็ต (Web Search)
+  // ==========================================
+  handleWebSearch: function(text) {
+    var self = this;
+    // ลบคำค้นนำหน้า เช่น "ค้นหาเรื่อง", "หาข้อมูลเกี่ยวกับ"
+    var query = text
+      .replace(/^ค้นหาเรื่อง\s*/i, '')
+      .replace(/^ค้นหาข้อมูลเรื่อง\s*/i, '')
+      .replace(/^ค้นหาข้อมูลเกี่ยวกับ\s*/i, '')
+      .replace(/^ค้นหาข้อมูล\s*/i, '')
+      .replace(/^ค้นหา\s*/i, '')
+      .replace(/^ค้นข้อมูล\s*/i, '')
+      .replace(/^หาข้อมูลเรื่อง\s*/i, '')
+      .replace(/^หาข้อมูลเกี่ยวกับ\s*/i, '')
+      .replace(/^หาข้อมูล\s*/i, '')
+      .replace(/^เสิร์ช\s*/i, '')
+      .replace(/^search for\s*/i, '')
+      .replace(/^search about\s*/i, '')
+      .trim();
+
+    if (!query) {
+      return Promise.resolve({
+        type: 'answer',
+        text: 'กรุณาระบุหัวข้อที่ต้องการค้นหาครับ\n\nตัวอย่าง:\n• "ค้นหาเรื่อง กติกาฟุตซอล"\n• "หาข้อมูลเกี่ยวกับ โรคเบาหวานในเด็ก"',
+        source: 'Genesis',
+        hasDocument: false,
+        canDownload: false
+      });
+    }
+
+    return fetch('/api/search?q=' + encodeURIComponent(query))
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.results && data.results.length > 0) {
+          var responseText = '🔍 ผลการค้นหา "' + query + '":\n\n';
+          data.results.forEach(function(r, i) {
+            responseText += (i + 1) + '. ' + r.title + '\n';
+            if (r.snippet) responseText += '   ' + r.snippet + '\n';
+            if (r.url) responseText += '   🔗 ' + r.url + '\n';
+            responseText += '\n';
+          });
+
+          // จดจำผลค้นหา
+          if (typeof DataStore !== 'undefined') {
+            var summary = data.results.map(function(r) {
+              return r.title + ': ' + r.snippet;
+            }).join('\n');
+            DataStore.saveLearnedInfo({
+              topic: query,
+              content: summary,
+              source: 'web_search',
+              keywords: query.split(/\s+/)
+            });
+          }
+
+          responseText += '💡 ข้อมูลนี้ได้บันทึกไว้แล้ว ครั้งหน้าถามซ้ำจะตอบได้ทันทีครับ';
+
+          return {
+            type: 'web_search_result',
+            text: responseText,
+            source: 'อินเทอร์เน็ต',
+            hasDocument: false,
+            canDownload: false
+          };
+        } else {
+          return {
+            type: 'answer',
+            text: 'ไม่พบผลการค้นหา "' + query + '" จากอินเทอร์เน็ตครับ\n\n💡 ลองเปลี่ยนคำค้นหา หรือถามใหม่ด้วยคำที่เฉพาะเจาะจงกว่านี้ครับ',
+            source: 'อินเทอร์เน็ต',
+            hasDocument: false,
+            canDownload: false
+          };
+        }
+      })
+      .catch(function(err) {
+        console.error('Web search error:', err);
+        return {
+          type: 'answer',
+          text: 'เกิดข้อผิดพลาดในการค้นหาอินเทอร์เน็ตครับ\n\n💡 ลองใหม่อีกครั้ง หรือถามคำถามอื่นก่อนได้ครับ',
+          source: 'อินเทอร์เน็ต',
+          hasDocument: false,
+          canDownload: false
+        };
+      });
+  },
+
+  // ==========================================
+  // จัดการสั่งจดจำ (Learn)
+  // ==========================================
+  handleLearn: function(text) {
+    var info = text
+      .replace(/^จำไว้ว่า\s*/i, '')
+      .replace(/^จำว่า\s*/i, '')
+      .replace(/^จดจำว่า\s*/i, '')
+      .replace(/^ให้จำว่า\s*/i, '')
+      .replace(/^ให้จดจำว่า\s*/i, '')
+      .replace(/^ให้จำไว้ว่า\s*/i, '')
+      .replace(/^บันทึกว่า\s*/i, '')
+      .replace(/^จดไว้ว่า\s*/i, '')
+      .replace(/^จดว่า\s*/i, '')
+      .trim();
+
+    if (!info) {
+      return Promise.resolve({
+        type: 'answer',
+        text: 'กรุณาระบุข้อมูลที่ต้องการให้จำครับ\n\nตัวอย่าง:\n• "จำไว้ว่า โรงเรียนเราเปิดเทอม 16 พ.ค. 69"\n• "จำไว้ว่า คุณครูสมชายเป็นครูประจำชั้น ป.3"',
+        source: 'Genesis',
+        hasDocument: false,
+        canDownload: false
+      });
+    }
+
+    var topic = info.length > 50 ? info.substring(0, 50) + '...' : info;
+
+    if (typeof DataStore !== 'undefined') {
+      DataStore.saveLearnedInfo({
+        topic: topic,
+        content: info,
+        source: 'manual_input',
+        keywords: info.split(/\s+/).filter(function(w) { return w.length > 2; })
+      });
+    }
+
+    return Promise.resolve({
+      type: 'learn_result',
+      text: '✅ จดจำเรียบร้อยแล้วครับ!\n\n📝 บันทึก: "' + info + '"\n\n💡 ครั้งหน้าถามเรื่องนี้ ผมจะตอบได้ทันทีครับ',
+      source: 'Genesis',
+      hasDocument: false,
+      canDownload: false
+    });
+  },
+
+  // ==========================================
+  // ค้นอินเทอร์เน็ตอัตโนมัติ (Auto-fallback)
+  // ==========================================
+  _autoSearchOnline: function(text) {
+    return fetch('/api/search?q=' + encodeURIComponent(text))
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.results && data.results.length > 0) {
+          var responseText = '🔍 ค้นพบจากอินเทอร์เน็ต "' + text + '":\n\n';
+          data.results.slice(0, 3).forEach(function(r, i) {
+            responseText += (i + 1) + '. ' + r.title + '\n';
+            if (r.snippet) responseText += '   ' + r.snippet + '\n';
+            if (r.url) responseText += '   🔗 ' + r.url + '\n';
+            responseText += '\n';
+          });
+
+          // จดจำผลค้นหาอัตโนมัติ
+          if (typeof DataStore !== 'undefined') {
+            var summary = data.results.slice(0, 3).map(function(r) {
+              return r.title + ': ' + r.snippet;
+            }).join('\n');
+            DataStore.saveLearnedInfo({
+              topic: text,
+              content: summary,
+              source: 'web_search_auto',
+              keywords: text.split(/\s+/)
+            });
+          }
+
+          responseText += '💡 ข้อมูลนี้ได้บันทึกไว้แล้ว ถามซ้ำจะตอบได้ทันทีครับ';
+
+          return {
+            type: 'web_search_result',
+            text: responseText,
+            source: 'อินเทอร์เน็ต (ค้นอัตโนมัติ)',
+            hasDocument: false,
+            canDownload: false
+          };
+        }
+        throw new Error('No results');
+      });
   },
 
   // ==========================================

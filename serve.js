@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
@@ -47,6 +48,65 @@ async function getCachedTTS(text) {
   return audio;
 }
 
+// ====== DuckDuckGo Web Search ======
+function searchDuckDuckGo(query) {
+  return new Promise(function(resolve, reject) {
+    var searchUrl = 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(query);
+    var options = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
+      },
+      timeout: 10000
+    };
+
+    https.get(searchUrl, options, function(response) {
+      var body = '';
+      response.on('data', function(chunk) { body += chunk; });
+      response.on('end', function() {
+        var results = parseSearchResults(body);
+        resolve({ query: query, results: results });
+      });
+    }).on('error', function(err) {
+      reject(err);
+    }).on('timeout', function() {
+      reject(new Error('Search timeout'));
+    });
+  });
+}
+
+function parseSearchResults(html) {
+  var results = [];
+  var blocks = html.split('result__body">');
+  for (var i = 1; i < Math.min(blocks.length, 12); i++) {
+    var block = blocks[i];
+    if (block.indexOf('badge--ad') !== -1) continue;
+    var titleMatch = block.match(/class="result__a"[^>]*>([\s\S]*?)<\/a>/);
+    var snippetMatch = block.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/a>/);
+    var urlMatch = block.match(/class="result__url"[^>]*>\s*([\s\S]*?)\s*<\/a>/);
+    if (titleMatch) {
+      var title = titleMatch[1].replace(/<[^>]+>/g, '').trim();
+      var snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+      var resultUrl = '';
+      if (urlMatch) {
+        resultUrl = urlMatch[1].replace(/<[^>]+>/g, '').trim();
+      }
+      if (!resultUrl) {
+        var hrefMatch = block.match(/class="result__a"[^>]*href="([^"]*)"/);
+        if (hrefMatch) {
+          var uddg = hrefMatch[1].match(/uddg=([^&]+)/);
+          if (uddg) {
+            try { resultUrl = decodeURIComponent(uddg[1]); } catch(e) { resultUrl = ''; }
+          }
+        }
+      }
+      if (title) {
+        results.push({ title: title, snippet: snippet, url: resultUrl });
+      }
+    }
+  }
+  return results;
+}
+
 http.createServer(async function(req, res) {
   var parsedUrl = url.parse(req.url, true);
   var pathname = parsedUrl.pathname;
@@ -73,6 +133,26 @@ http.createServer(async function(req, res) {
       console.error('TTS Error:', err.message);
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // ====== API: DuckDuckGo Web Search ======
+  if (pathname === '/api/search') {
+    var query = parsedUrl.query.q || '';
+    if (!query) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end('{"error":"No query"}');
+      return;
+    }
+    try {
+      var results = await searchDuckDuckGo(query);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(results));
+    } catch (err) {
+      console.error('Search Error:', err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message, results: [] }));
     }
     return;
   }
