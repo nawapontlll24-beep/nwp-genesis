@@ -108,6 +108,29 @@ var Router = {
       handler: 'learn_handler'
     });
 
+    // ====== หมวด 8: ลบความจำ (Forget) ======
+    routes.push({
+      intent: 'forget',
+      patterns: [
+        /^ลืมเรื่อง|^ลืมว่า|^ลบเรื่อง|^ลบข้อมูลเรื่อง/i,
+        /^ให้ลืม|^ให้ลบข้อมูล|^ลบความจำ/i
+      ],
+      department: null,
+      handler: 'forget_handler'
+    });
+
+    // ====== หมวด 9: ดูข้อมูลที่เรียนรู้ (List Learned) ======
+    routes.push({
+      intent: 'list_learned',
+      patterns: [
+        /^ดูข้อมูลที่เรียนรู้|ดูข้อมูลที่จำไว้|ข้อมูลที่เคยจำ/i,
+        /^ข้อมูลที่เรียนรู้|สิ่งที่เคยจำ|สิ่งที่เรียนรู้/i,
+        /^list learned|list memory/i
+      ],
+      department: null,
+      handler: 'list_learned_handler'
+    });
+
     return routes;
   },
 
@@ -306,6 +329,18 @@ var Router = {
         dept: 'Genesis',
         action: 'กำลังบันทึกข้อมูลใหม่...',
         icon: 'fas fa-brain'
+      });
+    } else if (intent === 'forget') {
+      steps.push({
+        dept: 'Genesis',
+        action: 'กำลังลบข้อมูลจากความจำ...',
+        icon: 'fas fa-eraser'
+      });
+    } else if (intent === 'list_learned') {
+      steps.push({
+        dept: 'Genesis',
+        action: 'กำลังดึงข้อมูลที่เรียนรู้ทั้งหมด...',
+        icon: 'fas fa-list'
       });
     }
 

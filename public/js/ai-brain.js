@@ -79,8 +79,8 @@ var AIBrain = {
       'ตอนนี้เป็นปีการศึกษา 2569 ภาคเรียนที่ 1 ครับ มีนักเรียนประมาณ 380 คน'
     ],
     help: [
-      'ผมช่วยได้หลายอย่างเลยครับ:\n\n💬 คุยทั่วไป - ถามอะไรก็ได้ ผมคุยเป็นเพื่อนได้\n❓ ถามคำถาม - กติกากีฬา อาหาร กฎหมาย ข้อมูลโรงเรียน\n📄 สั่งงาน - แผนการสอน หนังสือราชการ บันทึก รายงาน คำสั่ง\n🏃 จัดงาน - กีฬาสี วันเด็ก ทัศนศึกษา\n💰 งบประมาณ - ขอจัดสรร จัดซื้อ\n🔍 ค้นหาอินเทอร์เน็ต - "ค้นหาเรื่อง..."\n📝 จดจำข้อมูล - "จำไว้ว่า..."\n\nลองพิมพ์ดูเลยครับ!',
-      'ลองพิมพ์อะไรก็ได้ครับ เช่น:\n• "กติกาฟุตบอล" - ผมตอบได้เลย\n• "เขียนแผนการสอนป.5" - ผมสร้างเอกสารให้\n• "จัดกีฬาสี" - ผมจัด workflow ให้\n• "ค้นหาเรื่อง โรคเบาหวาน" - ผมค้นหาจากอินเทอร์เน็ตให้\n• "จำไว้ว่า โรงเรียนเปิดเทอม 16 พ.ค." - ผมจดจำไว้ให้\n• หรือจะคุยเล่นก็ได้นะครับ!'
+      'ผมช่วยได้หลายอย่างเลยครับ:\n\n💬 คุยทั่วไป - ถามอะไรก็ได้ ผมคุยเป็นเพื่อนได้\n❓ ถามคำถาม - กติกากีฬา อาหาร กฎหมาย ข้อมูลโรงเรียน\n📄 สั่งงาน - แผนการสอน หนังสือราชการ บันทึก รายงาน คำสั่ง\n🏃 จัดงาน - กีฬาสี วันเด็ก ทัศนศึกษา\n💰 งบประมาณ - ขอจัดสรร จัดซื้อ\n🔍 ค้นหาอินเทอร์เน็ต - "ค้นหาเรื่อง..."\n📝 จดจำข้อมูล - "จำไว้ว่า..."\n🗑️ ลบความจำ - "ลืมเรื่อง..."\n📚 ดูข้อมูลที่เรียนรู้ - "ดูข้อมูลที่เรียนรู้"\n\nลองพิมพ์ดูเลยครับ!',
+      'ลองพิมพ์อะไรก็ได้ครับ เช่น:\n• "กติกาฟุตบอล" - ผมตอบได้เลย\n• "เขียนแผนการสอนป.5" - ผมสร้างเอกสารให้\n• "จัดกีฬาสี" - ผมจัด workflow ให้\n• "ค้นหาเรื่อง โรคเบาหวาน" - ผมค้นหาจากอินเทอร์เน็ตให้\n• "จำไว้ว่า โรงเรียนเปิดเทอม 16 พ.ค." - ผมจดจำไว้ให้\n• "ดูข้อมูลที่เรียนรู้" - ดูว่าจำอะไรไว้บ้าง\n• "ลืมเรื่อง เปิดเทอม" - ลบข้อมูลที่จำไว้\n• หรือจะคุยเล่นก็ได้นะครับ!'
     ],
     howAreYou: [
       'ผมสบายดีครับ ขอบคุณที่ถาม! วันนี้คุณครูเป็นอย่างไรบ้างครับ?',
@@ -234,7 +234,32 @@ var AIBrain = {
       }
     }
 
-    // ====== ประเภท 5: ค้นหา/วิจัย (Research) ======
+    // ====== ประเภท 5: ลบความจำ (Forget) ======
+    var forgetPatterns = [
+      /^ลืมเรื่อง|^ลืมว่า|^ลบเรื่อง|^ลบข้อมูลเรื่อง/i,
+      /^ให้ลืม|^ให้ลบข้อมูล|^ลบความจำ/i
+    ];
+
+    for (var i = 0; i < forgetPatterns.length; i++) {
+      if (forgetPatterns[i].test(text)) {
+        return { type: 'forget', confidence: 0.95 };
+      }
+    }
+
+    // ====== ประเภท 6: ดูข้อมูลที่เรียนรู้ (List Learned) ======
+    var listLearnedPatterns = [
+      /^ดูข้อมูลที่เรียนรู้|ดูข้อมูลที่จำไว้|ข้อมูลที่เคยจำ/i,
+      /^ข้อมูลที่เรียนรู้|สิ่งที่เคยจำ|สิ่งที่เรียนรู้/i,
+      /^list learned|list memory/i
+    ];
+
+    for (var i = 0; i < listLearnedPatterns.length; i++) {
+      if (listLearnedPatterns[i].test(text)) {
+        return { type: 'list_learned', confidence: 0.95 };
+      }
+    }
+
+    // ====== ประเภท 7: ค้นหา/วิจัย (Research) ======
     var researchPatterns = [
       /ค้นหา|ค้นคว้า|หาข้อมูล|สืบค้น|วิจัย|สำรวจ/i,
       /วิเคราะห์|เปรียบเทียบ|สรุปผล|ประเมินผล/i,
@@ -325,6 +350,10 @@ var AIBrain = {
               result = self.handleWebSearch(text);
             } else if (intent.type === 'learn') {
               result = self.handleLearn(text);
+            } else if (intent.type === 'forget') {
+              result = self.handleForget(text);
+            } else if (intent.type === 'list_learned') {
+              result = self.handleListLearned();
             } else if (intent.type === 'research') {
               result = self.handleResearch(text, deptResult);
             } else if (intent.type === 'conversation') {
@@ -611,6 +640,124 @@ var AIBrain = {
     return Promise.resolve({
       type: 'learn_result',
       text: '✅ จดจำเรียบร้อยแล้วครับ!\n\n📝 บันทึก: "' + info + '"\n\n💡 ครั้งหน้าถามเรื่องนี้ ผมจะตอบได้ทันทีครับ',
+      source: 'Genesis',
+      hasDocument: false,
+      canDownload: false
+    });
+  },
+
+  // ==========================================
+  // จัดการลบความจำ (Forget)
+  // ==========================================
+  handleForget: function(text) {
+    var topic = text
+      .replace(/^ลืมเรื่อง\s*/i, '')
+      .replace(/^ลืมว่า\s*/i, '')
+      .replace(/^ลบเรื่อง\s*/i, '')
+      .replace(/^ลบข้อมูลเรื่อง\s*/i, '')
+      .replace(/^ให้ลืม\s*/i, '')
+      .replace(/^ให้ลบข้อมูล\s*/i, '')
+      .replace(/^ลบความจำ\s*/i, '')
+      .trim();
+
+    if (!topic) {
+      return Promise.resolve({
+        type: 'answer',
+        text: 'กรุณาระบุหัวข้อที่ต้องการลบครับ\n\nตัวอย่าง:\n• "ลืมเรื่อง เปิดเทอม"\n• "ลบข้อมูลเรื่อง คุณครูสมชาย"\n\n💡 หรือพิมพ์ "ดูข้อมูลที่เรียนรู้" เพื่อดูรายการทั้งหมดก่อนเลือกลบ',
+        source: 'Genesis',
+        hasDocument: false,
+        canDownload: false
+      });
+    }
+
+    if (typeof DataStore === 'undefined') {
+      return Promise.resolve({
+        type: 'answer',
+        text: 'ไม่สามารถลบได้ในขณะนี้ครับ',
+        source: 'Genesis',
+        hasDocument: false,
+        canDownload: false
+      });
+    }
+
+    var allLearned = DataStore.getLearnedInfo('');
+    var matched = allLearned.filter(function(item) {
+      var t = item.topic ? item.topic.toLowerCase() : '';
+      var c = item.content ? item.content.toLowerCase() : '';
+      var q = topic.toLowerCase();
+      return t.indexOf(q) !== -1 || c.indexOf(q) !== -1;
+    });
+
+    if (matched.length === 0) {
+      return Promise.resolve({
+        type: 'answer',
+        text: 'ไม่พบข้อมูลที่เกี่ยวข้องกับ "' + topic + '" ในคลังความจำครับ\n\n💡 พิมพ์ "ดูข้อมูลที่เรียนรู้" เพื่อดูรายการทั้งหมด',
+        source: 'Genesis',
+        hasDocument: false,
+        canDownload: false
+      });
+    }
+
+    matched.forEach(function(item) {
+      DataStore.deleteLearned(item.id);
+    });
+
+    var responseText = '🗑️ ลบความจำเรียบร้อยแล้วครับ!\n\n';
+    responseText += 'ลบ ' + matched.length + ' รายการ:\n';
+    matched.forEach(function(item, i) {
+      responseText += (i + 1) + '. "' + item.topic + '"\n';
+    });
+
+    return Promise.resolve({
+      type: 'forget_result',
+      text: responseText,
+      source: 'Genesis',
+      hasDocument: false,
+      canDownload: false
+    });
+  },
+
+  // ==========================================
+  // จัดการดูข้อมูลที่เรียนรู้ (List Learned)
+  // ==========================================
+  handleListLearned: function() {
+    if (typeof DataStore === 'undefined') {
+      return Promise.resolve({
+        type: 'answer',
+        text: 'ไม่สามารถดึงข้อมูลได้ในขณะนี้ครับ',
+        source: 'Genesis',
+        hasDocument: false,
+        canDownload: false
+      });
+    }
+
+    var allLearned = DataStore.getLearnedInfo('');
+
+    if (!allLearned || allLearned.length === 0) {
+      return Promise.resolve({
+        type: 'answer',
+        text: 'ยังไม่มีข้อมูลที่เรียนรู้ไว้ครับ\n\n💡 ลอง:\n• "ค้นหาเรื่อง [หัวข้อ]" → ค้นจากอินเทอร์เน็ตแล้วจดจำอัตโนมัติ\n• "จำไว้ว่า [ข้อมูล]" → จดจำเอง',
+        source: 'Genesis',
+        hasDocument: false,
+        canDownload: false
+      });
+    }
+
+    var responseText = '📚 ข้อมูลที่เรียนรู้ทั้งหมด ' + allLearned.length + ' รายการ:\n\n';
+    allLearned.forEach(function(item, i) {
+      var source = item.source === 'manual_input' ? '📝 ป้อนเอง' :
+                   item.source === 'web_search' ? '🔍 ค้นหาเอง' :
+                   item.source === 'web_search_auto' ? '🤖 ค้นอัตโนมัติ' : '📌 อื่นๆ';
+      var date = item.createdAt ? new Date(item.createdAt).toLocaleDateString('th-TH') : '-';
+      responseText += (i + 1) + '. ' + item.topic + '\n';
+      responseText += '   ' + source + ' | ' + date + '\n';
+    });
+
+    responseText += '\n💡 ลบได้ด้วยคำสั่ง "ลืมเรื่อง [หัวข้อ]"';
+
+    return Promise.resolve({
+      type: 'list_learned_result',
+      text: responseText,
       source: 'Genesis',
       hasDocument: false,
       canDownload: false
