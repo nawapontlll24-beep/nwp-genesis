@@ -72,6 +72,25 @@ function preprocessThaiText(text) {
   return t;
 }
 
+function animateMouth(speaking) {
+  var mouth = document.getElementById('ai-mouth');
+  if (mouth) {
+    if (speaking) mouth.classList.add('speaking');
+    else mouth.classList.remove('speaking');
+  }
+}
+
+function updateAiSpeech(text, mode) {
+  var speechText = document.getElementById('ai-speech-text');
+  var modeEl = document.getElementById('ai-mode');
+  if (speechText) {
+    var clean = text.replace(/[\n\r]/g, ' ').replace(/[#\-\*\"\`\~\^\[\]\{\}\<\>\/\\]/g, '').replace(/[\u{1F600}-\u{1F9FF}]/gu, '').trim();
+    if (clean.length > 80) clean = clean.substring(0, 80) + '...';
+    speechText.textContent = clean;
+  }
+  if (modeEl && mode) modeEl.textContent = mode;
+}
+
 function speak(text) {
   if (!voiceEnabled) return;
   var clean = preprocessThaiText(text);
@@ -98,12 +117,15 @@ function speak(text) {
       utter.rate = 0.85;
       utter.pitch = 0.95;
       utter.volume = 1.0;
+      animateMouth(true);
+      utter.onend = function() { animateMouth(false); };
       window.speechSynthesis.speak(utter);
       return;
     }
   }
 
   // วิธี 2: ใช้ Server-side TTS (Microsoft Edge Neural TTS)
+  animateMouth(true);
   speakViaServer(clean);
 }
 
@@ -111,9 +133,10 @@ function speakViaServer(text) {
   var url = '/api/tts?text=' + encodeURIComponent(text);
   currentTtsAudio = new Audio(url);
   currentTtsAudio.volume = 1.0;
-  currentTtsAudio.onended = function() { currentTtsAudio = null; };
+  currentTtsAudio.onended = function() { currentTtsAudio = null; animateMouth(false); };
   currentTtsAudio.onerror = function() {
     currentTtsAudio = null;
+    animateMouth(false);
     // Fallback: ลอง Web Speech API ปกติ
     if (window.speechSynthesis) {
       var utter = new SpeechSynthesisUtterance(text);
@@ -205,6 +228,10 @@ function addMessage(text, role, opts) {
   opts = opts || {};
   var container = document.getElementById('chat-messages');
   if (!container) return;
+
+  // ซ่อน welcome screen เมื่อมีข้อความแรก
+  var welcome = document.getElementById('ai-welcome');
+  if (welcome) { welcome.style.display = 'none'; }
 
   var msg = document.createElement('div');
   msg.className = 'chat-msg ' + role;
@@ -436,6 +463,18 @@ function sendMessage() {
             showPdf: result.type === 'document_created',
             title: result.docData ? result.docData.title : 'เอกสาร'
           });
+
+          // อัปเดต AI Avatar speech bubble
+          var modeText = 'READY';
+          if (result.type === 'document_created') modeText = 'DOCUMENT READY';
+          else if (result.type === 'web_search_result') modeText = 'SEARCHING...';
+          else if (result.type === 'learn_result') modeText = 'LEARNED';
+          else if (result.type === 'forget_result') modeText = 'FORGOTTEN';
+          else if (result.type === 'list_learned_result') modeText = 'MEMORY LIST';
+          else if (result.type === 'answer') modeText = 'ANSWERED';
+          else if (result.type === 'research_result') modeText = 'RESEARCH DONE';
+          else if (result.type === 'conversation') modeText = 'CHATTING';
+          updateAiSpeech(result.text, modeText);
 
           var sub = document.getElementById('header-subtitle');
           if (sub) sub.textContent = 'ออนไลน์ - ' + (result.intent || 'ready');
