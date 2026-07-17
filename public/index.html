@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#050a0f">
   <meta name="description" content="Genesis - เลขา AI สำหรับครู โรงเรียนหนองพอกพัฒนาประชานุสรณ์">
   <title>Genesis - เลขา AI โรงเรียนหนองพอกพัฒนาประชานุสรณ์</title>
-  <link rel="stylesheet" href="css/style.css?v=5.0">
+  <link rel="stylesheet" href="css/style.css?v=6.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -45,120 +45,152 @@
       </div>
     </header>
 
-    <!-- Chat Area -->
-    <main class="chat-main">
-      <div class="chat-messages" id="chat-messages">
-        <!-- AI Welcome Screen -->
-        <div class="ai-welcome" id="ai-welcome">
-          <div class="ai-character">
+    <!-- App Body: Chat + Sidebar -->
+    <div class="app-body">
+      <!-- Chat Area (Left) -->
+      <div class="chat-area">
+        <main class="chat-main">
+          <div class="chat-messages" id="chat-messages"></div>
+        </main>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+          <div class="attached-files" id="attached-files"></div>
+          <div class="input-wrapper">
+            <textarea id="chat-input" placeholder="พิมพ์ข้อความ... หรือกด 🎤 พูด" rows="1"></textarea>
+            <div class="input-actions">
+              <button class="action-btn" id="btn-voice" title="พูด">
+                <i class="fas fa-microphone"></i>
+              </button>
+              <button class="action-btn" id="btn-attach" title="แนบไฟล์">
+                <i class="fas fa-paperclip"></i>
+              </button>
+              <button class="action-btn send-btn" id="btn-send" title="ส่ง">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+          <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none">
+
+          <!-- Quick Actions -->
+          <div class="quick-commands" id="quick-commands">
+            <button class="quick-btn" data-cmd="กติกาฟุตบอล">กติกาฟุตบอล</button>
+            <button class="quick-btn" data-cmd="แผนการสอนสุขศึกษา ป.5 เรื่อง โภชนาการ">แผนการสอน</button>
+            <button class="quick-btn" data-cmd="เขียนหนังสือราชการ เรื่อง ขอความเห็นชอบ จัดงานกีฬาสี">หนังสือราชการ</button>
+            <button class="quick-btn" data-cmd="จัดกีฬาสี">จัดกีฬาสี</button>
+            <button class="quick-btn" data-cmd="ขอกติกาวอลเลย์บอล">กติกาวอลเลย์</button>
+            <button class="quick-btn" data-cmd="อาหารที่มีประโยชน์สำหรับเด็ก">โภชนาการ</button>
+            <button class="quick-btn" data-cmd="ขอจัดสรรงบประมาณ ซื้ออุปกรณ์กีฬา 20000 บาท">ขอจัดสรรงบ</button>
+            <button class="quick-btn" data-cmd="ทำคำสั่งแต่งตั้งเจ้าหน้าที่">คำสั่งแต่งตั้ง</button>
+          </div>
+
+          <!-- Tabs -->
+          <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="chat" onclick="switchTab('chat')">
+              <i class="fas fa-comments"></i><span>แชท</span>
+            </button>
+            <button class="tab-btn" data-tab="docs" onclick="switchTab('docs')">
+              <i class="fas fa-folder-open"></i><span>เอกสาร</span>
+            </button>
+            <button class="tab-btn" data-tab="agents" onclick="switchTab('agents')">
+              <i class="fas fa-sitemap"></i><span>ทีม</span>
+            </button>
+            <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard')">
+              <i class="fas fa-chart-line"></i><span>Dashboard</span>
+            </button>
+          </nav>
+
+          <!-- Tab: Documents -->
+          <div class="tab-content" id="tab-docs">
+            <div class="card">
+              <div class="docs-header">
+                <h2><i class="fas fa-folder-open"></i> เอกสาร</h2>
+                <div class="search-box">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="search-docs" placeholder="ค้นหา..." oninput="searchDocs()">
+                </div>
+              </div>
+              <div id="docs-list" class="docs-list"><p class="empty-msg">ยังไม่มีเอกสาร</p></div>
+            </div>
+          </div>
+
+          <!-- Tab: Agents -->
+          <div class="tab-content" id="tab-agents">
+            <div class="card">
+              <h2><i class="fas fa-sitemap"></i> องค์กร AI</h2>
+              <p class="card-subtitle">โครงสร้างฝ่ายงานของ Genesis</p>
+              <div class="agent-grid" id="agent-grid"></div>
+            </div>
+          </div>
+
+          <!-- Tab: Dashboard -->
+          <div class="tab-content" id="tab-dashboard">
+            <div class="card">
+              <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
+              <p class="card-subtitle">สถิติและข้อมูลภาพรวม</p>
+              <div id="dashboard-content"><p class="empty-msg">กำลังโหลด...</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Sidebar (Right - Always Visible) -->
+      <aside class="ai-sidebar" id="ai-sidebar">
+        <div class="ai-sidebar-inner">
+          <div class="ai-face-wrap">
+            <div class="ai-face-glow"></div>
             <div class="ai-face">
               <div class="ai-helmet">
                 <div class="helmet-line line-1"></div>
                 <div class="helmet-line line-2"></div>
                 <div class="helmet-line line-3"></div>
               </div>
-              <div class="ai-eye left"></div>
-              <div class="ai-eye right"></div>
+              <div class="ai-eyebrow left-brow"></div>
+              <div class="ai-eyebrow right-brow"></div>
+              <div class="ai-eye left">
+                <div class="eye-pupil"></div>
+              </div>
+              <div class="ai-eye right">
+                <div class="eye-pupil"></div>
+              </div>
               <div class="ai-nose"></div>
+              <div class="ai-cheek left-cheek"></div>
+              <div class="ai-cheek right-cheek"></div>
               <div class="ai-mouth" id="ai-mouth"></div>
               <div class="ai-jaw"></div>
               <div class="ai-ear left-ear"></div>
               <div class="ai-ear right-ear"></div>
             </div>
+          </div>
+          <div class="ai-identity">
             <div class="ai-name">GENESIS</div>
-            <div class="ai-role">AI เลขาส่วนตัว | โรงเรียนหนองพอกพัฒนาประชานุสรณ์</div>
-            <div class="ai-speech" id="ai-speech">
-              <div class="ai-speech-text" id="ai-speech-text">สวัสดีครับคุณครู ผม Genesis พร้อมรับใช้ครับ</div>
-              <div class="ai-status-bar">
-                <span class="status-dot"></span>
-                <span>ONLINE</span>
-                <span class="status-sep">|</span>
-                <span id="ai-mode">READY</span>
-              </div>
+            <div class="ai-role">AI เลขาส่วนตัว</div>
+          </div>
+          <div class="ai-speech" id="ai-speech">
+            <div class="ai-speech-text" id="ai-speech-text">พร้อมรับใช้ครับ</div>
+          </div>
+          <div class="ai-status-bar">
+            <span class="status-dot"></span>
+            <span>ONLINE</span>
+            <span class="status-sep">|</span>
+            <span id="ai-mode">READY</span>
+          </div>
+          <div class="ai-metrics">
+            <div class="ai-metric">
+              <span class="metric-val" id="metric-queries">0</span>
+              <span class="metric-label">คำถาม</span>
+            </div>
+            <div class="ai-metric">
+              <span class="metric-val" id="metric-docs">0</span>
+              <span class="metric-label">เอกสาร</span>
+            </div>
+            <div class="ai-metric">
+              <span class="metric-val" id="metric-learned">0</span>
+              <span class="metric-label">เรียนรู้</span>
             </div>
           </div>
         </div>
-      </div>
-    </main>
-
-    <!-- Input Area -->
-    <div class="chat-input-area">
-      <div class="attached-files" id="attached-files"></div>
-      <div class="input-wrapper">
-        <textarea id="chat-input" placeholder="พิมพ์ข้อความ... หรือกด 🎤 พูด" rows="1"></textarea>
-        <div class="input-actions">
-          <button class="action-btn" id="btn-voice" title="พูด">
-            <i class="fas fa-microphone"></i>
-          </button>
-          <button class="action-btn" id="btn-attach" title="แนบไฟล์">
-            <i class="fas fa-paperclip"></i>
-          </button>
-          <button class="action-btn send-btn" id="btn-send" title="ส่ง">
-            <i class="fas fa-paper-plane"></i>
-          </button>
-        </div>
-      </div>
-      <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none">
-
-      <!-- Quick Actions -->
-      <div class="quick-commands" id="quick-commands">
-        <button class="quick-btn" data-cmd="กติกาฟุตบอล">กติกาฟุตบอล</button>
-        <button class="quick-btn" data-cmd="แผนการสอนสุขศึกษา ป.5 เรื่อง โภชนาการ">แผนการสอน</button>
-        <button class="quick-btn" data-cmd="เขียนหนังสือราชการ เรื่อง ขอความเห็นชอบ จัดงานกีฬาสี">หนังสือราชการ</button>
-        <button class="quick-btn" data-cmd="จัดกีฬาสี">จัดกีฬาสี</button>
-        <button class="quick-btn" data-cmd="ขอกติกาวอลเลย์บอล">กติกาวอลเลย์</button>
-        <button class="quick-btn" data-cmd="อาหารที่มีประโยชน์สำหรับเด็ก">โภชนาการ</button>
-        <button class="quick-btn" data-cmd="ขอจัดสรรงบประมาณ ซื้ออุปกรณ์กีฬา 20000 บาท">ขอจัดสรรงบ</button>
-        <button class="quick-btn" data-cmd="ทำคำสั่งแต่งตั้งเจ้าหน้าที่">คำสั่งแต่งตั้ง</button>
-      </div>
-
-      <!-- Tabs -->
-      <nav class="tab-nav">
-        <button class="tab-btn active" data-tab="chat" onclick="switchTab('chat')">
-          <i class="fas fa-comments"></i><span>แชท</span>
-        </button>
-        <button class="tab-btn" data-tab="docs" onclick="switchTab('docs')">
-          <i class="fas fa-folder-open"></i><span>เอกสาร</span>
-        </button>
-        <button class="tab-btn" data-tab="agents" onclick="switchTab('agents')">
-          <i class="fas fa-sitemap"></i><span>ทีม</span>
-        </button>
-        <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard')">
-          <i class="fas fa-chart-line"></i><span>Dashboard</span>
-        </button>
-      </nav>
-
-      <!-- Tab: Documents -->
-      <div class="tab-content" id="tab-docs">
-        <div class="card">
-          <div class="docs-header">
-            <h2><i class="fas fa-folder-open"></i> เอกสาร</h2>
-            <div class="search-box">
-              <i class="fas fa-search"></i>
-              <input type="text" id="search-docs" placeholder="ค้นหา..." oninput="searchDocs()">
-            </div>
-          </div>
-          <div id="docs-list" class="docs-list"><p class="empty-msg">ยังไม่มีเอกสาร</p></div>
-        </div>
-      </div>
-
-      <!-- Tab: Agents -->
-      <div class="tab-content" id="tab-agents">
-        <div class="card">
-          <h2><i class="fas fa-sitemap"></i> องค์กร AI</h2>
-          <p class="card-subtitle">โครงสร้างฝ่ายงานของ Genesis</p>
-          <div class="agent-grid" id="agent-grid"></div>
-        </div>
-      </div>
-
-      <!-- Tab: Dashboard -->
-      <div class="tab-content" id="tab-dashboard">
-        <div class="card">
-          <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
-          <p class="card-subtitle">สถิติและข้อมูลภาพรวม</p>
-          <div id="dashboard-content"><p class="empty-msg">กำลังโหลด...</p></div>
-        </div>
-      </div>
+      </aside>
     </div>
   </div>
 
@@ -171,13 +203,13 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Genesis Core -->
-  <script src="js/departments.js?v=5.0"></script>
-  <script src="js/knowledge-base.js?v=5.0"></script>
-  <script src="js/router.js?v=5.0"></script>
-  <script src="js/data-store.js?v=5.0"></script>
-  <script src="js/workflow.js?v=5.0"></script>
-  <script src="js/doc-generator.js?v=5.0"></script>
-  <script src="js/ai-brain.js?v=5.0"></script>
-  <script src="js/app.js?v=5.0"></script>
+  <script src="js/departments.js?v=6.0"></script>
+  <script src="js/knowledge-base.js?v=6.0"></script>
+  <script src="js/router.js?v=6.0"></script>
+  <script src="js/data-store.js?v=6.0"></script>
+  <script src="js/workflow.js?v=6.0"></script>
+  <script src="js/doc-generator.js?v=6.0"></script>
+  <script src="js/ai-brain.js?v=6.0"></script>
+  <script src="js/app.js?v=6.0"></script>
 </body>
 </html>

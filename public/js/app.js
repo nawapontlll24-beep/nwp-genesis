@@ -74,10 +74,22 @@ function preprocessThaiText(text) {
 
 function animateMouth(speaking) {
   var mouth = document.getElementById('ai-mouth');
+  var face = document.querySelector('.ai-face');
   if (mouth) {
     if (speaking) mouth.classList.add('speaking');
     else mouth.classList.remove('speaking');
   }
+  if (face) {
+    if (speaking) face.classList.add('speaking');
+    else face.classList.remove('speaking');
+  }
+}
+
+function setFaceEmotion(emotion) {
+  var face = document.querySelector('.ai-face');
+  if (!face) return;
+  face.classList.remove('thinking', 'speaking', 'happy');
+  if (emotion) face.classList.add(emotion);
 }
 
 function updateAiSpeech(text, mode) {
@@ -90,6 +102,34 @@ function updateAiSpeech(text, mode) {
   }
   if (modeEl && mode) modeEl.textContent = mode;
 }
+
+/* Eye Tracking — ลูกตากล้องหน้าตามเมาส์/นิ้ว */
+(function initEyeTracking() {
+  var pupils = document.querySelectorAll('.eye-pupil');
+  if (!pupils.length) return;
+  function track(cx, cy) {
+    pupils.forEach(function(pupil) {
+      var eye = pupil.parentElement;
+      if (!eye) return;
+      var rect = eye.getBoundingClientRect();
+      var ex = rect.left + rect.width / 2;
+      var ey = rect.top + rect.height / 2;
+      var dx = cx - ex;
+      var dy = cy - ey;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var maxR = (rect.width / 2) - (pupil.offsetWidth / 2);
+      if (dist > 0) {
+        var nx = (dx / dist) * Math.min(dist * 0.12, maxR);
+        var ny = (dy / dist) * Math.min(dist * 0.12, maxR);
+        pupil.style.transform = 'translate(calc(-50% + ' + nx.toFixed(1) + 'px), calc(-50% + ' + ny.toFixed(1) + 'px))';
+      }
+    });
+  }
+  document.addEventListener('mousemove', function(e) { track(e.clientX, e.clientY); });
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length) track(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+})();
 
 function speak(text) {
   if (!voiceEnabled) return;
@@ -158,6 +198,7 @@ function speakViaServer(text) {
 
 function testVoice() {
   try {
+    setFaceEmotion('happy');
     speak('สวัสดีครับคุณครู ผม Genesis พร้อมรับใช้ครับ');
   } catch(e) {}
 }
@@ -228,10 +269,6 @@ function addMessage(text, role, opts) {
   opts = opts || {};
   var container = document.getElementById('chat-messages');
   if (!container) return;
-
-  // ซ่อน welcome screen เมื่อมีข้อความแรก
-  var welcome = document.getElementById('ai-welcome');
-  if (welcome) { welcome.style.display = 'none'; }
 
   var msg = document.createElement('div');
   msg.className = 'chat-msg ' + role;
@@ -406,6 +443,8 @@ function sendMessage() {
 
   if (text) {
     showThinkingSteps([{ dept: 'Genesis', action: 'กำลังวิเคราะห์ "' + text.substring(0, 30) + '..."', icon: 'fas fa-brain' }]);
+    setFaceEmotion('thinking');
+    updateAiSpeech('กำลังคิด...', 'THINKING');
 
     // Safety timeout: reset stuck state after 10 seconds
     var safetyTimer = setTimeout(function() {
@@ -475,6 +514,8 @@ function sendMessage() {
           else if (result.type === 'research_result') modeText = 'RESEARCH DONE';
           else if (result.type === 'conversation') modeText = 'CHATTING';
           updateAiSpeech(result.text, modeText);
+          setFaceEmotion('happy');
+          setTimeout(function() { setFaceEmotion(null); }, 3000);
 
           var sub = document.getElementById('header-subtitle');
           if (sub) sub.textContent = 'ออนไลน์ - ' + (result.intent || 'ready');
@@ -493,6 +534,7 @@ function sendMessage() {
         clearTimeout(safetyTimer);
         console.error('Process Promise rejected:', err);
         removeThinking();
+        setFaceEmotion(null);
         addMessage('ขออภัยครับ เกิดข้อผิดพลาด: ' + (err.message || err) + '\nกรุณาลองใหม่', 'ai');
         isProcessing = false;
       });
@@ -822,6 +864,8 @@ function addWelcome() {
   var convCount = count > 0 ? '\n(ประวัติสนทนา ' + count + ' ครั้ง)' : '';
 
   addMessage(greet + ' คุณครู' + convCount + extra + '\n\nผม Genesis เลขา AI ของโรงเรียนหนองพอกพัฒนาประชานุสรณ์ พร้อมรับใช้ครับ\n\n💡 ลองพิมพ์:\n• "กติกาฟุตบอล" - ถามคำถาม\n• "เขียนแผนการสอนสุขศึกษา ป.5" - สั่งงาน\n• "จัดกีฬาสี" - เริ่ม workflow\n• "ดู Dashboard" - ดูสถิติ', 'ai');
+  setFaceEmotion('happy');
+  setTimeout(function() { setFaceEmotion(null); }, 3000);
 }
 
 // ==========================================
