@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#050a0f">
+  <meta name="description" content="Genesis - เลขา AI สำหรับครู โรงเรียนหนองพอกพัฒนาประชานุสรณ์">
+  <title>Genesis - เลขา AI โรงเรียนหนองพอกพัฒนาประชานุสรณ์</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <div class="scanlines"></div>
+  <div class="matrix-rain" id="matrix-rain"></div>
+
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="ai-core" id="ai-core">
+          <div class="core-ring ring-1"></div>
+          <div class="core-ring ring-2"></div>
+          <div class="core-ring ring-3"></div>
+          <div class="core-center"><span>G</span></div>
+        </div>
+        <div class="header-info">
+          <h1 class="glitch" data-text="GENESIS">GENESIS</h1>
+          <p class="subtitle" id="header-subtitle">ออนไลน์ - โรงเรียนหนองพอกพัฒนาประชานุสรณ์</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="btn-test-voice" title="ทดสอบเสียง" onclick="testVoice()" style="color:#22c55e">
+          <i class="fas fa-play-circle"></i>
+        </button>
+        <button class="icon-btn" id="btn-voice-toggle" title="เปิด/ปิดเสียง" onclick="toggleVoiceOutput()">
+          <i class="fas fa-volume-up" id="voice-icon"></i>
+        </button>
+        <button class="icon-btn" id="btn-clear-chat" title="ล้างแชท" onclick="clearChat()">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Chat Area -->
+    <main class="chat-main">
+      <div class="chat-messages" id="chat-messages">
+        <!-- messages rendered by JS -->
+      </div>
+    </main>
+
+    <!-- Input Area -->
+    <div class="chat-input-area">
+      <div class="attached-files" id="attached-files"></div>
+      <div class="input-wrapper">
+        <textarea id="chat-input" placeholder="พิมพ์ข้อความ... หรือกด 🎤 พูด" rows="1"></textarea>
+        <div class="input-actions">
+          <button class="action-btn" id="btn-voice" title="พูด">
+            <i class="fas fa-microphone"></i>
+          </button>
+          <button class="action-btn" id="btn-attach" title="แนบไฟล์">
+            <i class="fas fa-paperclip"></i>
+          </button>
+          <button class="action-btn send-btn" id="btn-send" title="ส่ง">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+      <input type="file" id="file-input" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none">
+
+      <!-- Quick Actions -->
+      <div class="quick-commands" id="quick-commands">
+        <button class="quick-btn" data-cmd="กติกาฟุตบอล">กติกาฟุตบอล</button>
+        <button class="quick-btn" data-cmd="แผนการสอนสุขศึกษา ป.5 เรื่อง โภชนาการ">แผนการสอน</button>
+        <button class="quick-btn" data-cmd="เขียนหนังสือราชการ เรื่อง ขอความเห็นชอบ จัดงานกีฬาสี">หนังสือราชการ</button>
+        <button class="quick-btn" data-cmd="จัดกีฬาสี">จัดกีฬาสี</button>
+        <button class="quick-btn" data-cmd="ขอกติกาวอลเลย์บอล">กติกาวอลเลย์</button>
+        <button class="quick-btn" data-cmd="อาหารที่มีประโยชน์สำหรับเด็ก">โภชนาการ</button>
+        <button class="quick-btn" data-cmd="ขอจัดสรรงบประมาณ ซื้ออุปกรณ์กีฬา 20000 บาท">ขอจัดสรรงบ</button>
+        <button class="quick-btn" data-cmd="ทำคำสั่งแต่งตั้งเจ้าหน้าที่">คำสั่งแต่งตั้ง</button>
+      </div>
+
+      <!-- Tabs -->
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="chat" onclick="switchTab('chat')">
+          <i class="fas fa-comments"></i><span>แชท</span>
+        </button>
+        <button class="tab-btn" data-tab="docs" onclick="switchTab('docs')">
+          <i class="fas fa-folder-open"></i><span>เอกสาร</span>
+        </button>
+        <button class="tab-btn" data-tab="agents" onclick="switchTab('agents')">
+          <i class="fas fa-sitemap"></i><span>ทีม</span>
+        </button>
+        <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard')">
+          <i class="fas fa-chart-line"></i><span>Dashboard</span>
+        </button>
+      </nav>
+
+      <!-- Tab: Documents -->
+      <div class="tab-content" id="tab-docs">
+        <div class="card">
+          <div class="docs-header">
+            <h2><i class="fas fa-folder-open"></i> เอกสาร</h2>
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="search-docs" placeholder="ค้นหา..." oninput="searchDocs()">
+            </div>
+          </div>
+          <div id="docs-list" class="docs-list"><p class="empty-msg">ยังไม่มีเอกสาร</p></div>
+        </div>
+      </div>
+
+      <!-- Tab: Agents -->
+      <div class="tab-content" id="tab-agents">
+        <div class="card">
+          <h2><i class="fas fa-sitemap"></i> องค์กร AI</h2>
+          <p class="card-subtitle">โครงสร้างฝ่ายงานของ Genesis</p>
+          <div class="agent-grid" id="agent-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Dashboard -->
+      <div class="tab-content" id="tab-dashboard">
+        <div class="card">
+          <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
+          <p class="card-subtitle">สถิติและข้อมูลภาพรวม</p>
+          <div id="dashboard-content"><p class="empty-msg">กำลังโหลด...</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Genesis Core -->
+  <script src="js/departments.js"></script>
+  <script src="js/knowledge-base.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/data-store.js"></script>
+  <script src="js/workflow.js"></script>
+  <script src="js/doc-generator.js"></script>
+  <script src="js/ai-brain.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+node_modules/
+test.js
+debug.html
+.DS_Store
+Thumbs.db
+*.log

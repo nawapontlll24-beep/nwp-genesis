@@ -1,0 +1,19 @@
+{
+  "name": "nwp-genesis",
+  "version": "3.0.0",
+  "description": "Genesis AI Secretary - เลขา AI สำหรับครูโรงเรียนหนองพอกพัฒนาประชานุสรณ์",
+  "main": "serve.js",
+  "scripts": {
+    "start": "node serve.js",
+    "dev": "node serve.js"
+  },
+  "dependencies": {
+    "msedge-tts": "^2.0.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["ai", "secretary", "thai", "school"],
+  "author": "NWP School",
+  "license": "MIT"
+}
