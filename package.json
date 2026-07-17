@@ -8,12 +8,18 @@
     "dev": "node serve.js"
   },
   "dependencies": {
+    "mammoth": "^1.12.0",
     "msedge-tts": "^2.0.7"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["ai", "secretary", "thai", "school"],
+  "keywords": [
+    "ai",
+    "secretary",
+    "thai",
+    "school"
+  ],
   "author": "NWP School",
   "license": "MIT"
 }
