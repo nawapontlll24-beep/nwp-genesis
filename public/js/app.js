@@ -361,50 +361,70 @@ function sendMessage() {
   if (text) {
     showThinkingSteps([{ dept: 'Genesis', action: 'กำลังวิเคราะห์ "' + text.substring(0, 30) + '..."', icon: 'fas fa-brain' }]);
 
-    AIBrain.process(text, {
-      onThinking: function(steps) {
-        showThinkingSteps(steps);
-      }
-    }).then(function(result) {
-      setTimeout(function() {
+    // Safety timeout: reset stuck state after 10 seconds
+    var safetyTimer = setTimeout(function() {
+      if (isProcessing) {
+        console.warn('Safety timeout: isProcessing was stuck, resetting');
         removeThinking();
-
-        var deptName = '';
-        var deptIcon = 'fas fa-building';
-        if (result && result.source) {
-          deptName = result.source;
-          var dept = Departments.getSub(result.source) || (result.deptId ? Departments.getSub(result.deptId) : null);
-          if (dept) { deptName = dept.name; deptIcon = dept.icon; }
-        }
-
-        addMessage(result.text, 'ai', {
-          dept: deptName,
-          deptIcon: deptIcon,
-          canDownload: result.canDownload,
-          docData: result.docData,
-          showPdf: result.type === 'document_created',
-          title: result.docData ? result.docData.title : 'เอกสาร'
-        });
-
-        try { speak(result.text.substring(0, 200)); } catch(e) {}
-
-        var sub = document.getElementById('header-subtitle');
-        if (sub) sub.textContent = 'ออนไลน์ - ' + (result.intent || 'ready');
-
-        if (attachedFiles.length > 0) {
-          DataStore.addAttachment(text, attachedFiles);
-          attachedFiles = [];
-          renderAttachedFiles();
-        }
-
+        addMessage('ขออภัยครับ ระบบประมวลผลช้าเกินไป กรุณาลองพิมพ์ใหม่อีกครั้ง', 'ai');
         isProcessing = false;
-      }, 500);
-    }).catch(function(err) {
-      console.error('Process error:', err);
+      }
+    }, 10000);
+
+    try {
+      AIBrain.process(text, {
+        onThinking: function(steps) {
+          showThinkingSteps(steps);
+        }
+      }).then(function(result) {
+        setTimeout(function() {
+          clearTimeout(safetyTimer);
+          removeThinking();
+
+          var deptName = '';
+          var deptIcon = 'fas fa-building';
+          if (result && result.source) {
+            deptName = result.source;
+            var dept = Departments.getSub(result.source) || (result.deptId ? Departments.getSub(result.deptId) : null);
+            if (dept) { deptName = dept.name; deptIcon = dept.icon; }
+          }
+
+          addMessage(result.text, 'ai', {
+            dept: deptName,
+            deptIcon: deptIcon,
+            canDownload: result.canDownload,
+            docData: result.docData,
+            showPdf: result.type === 'document_created',
+            title: result.docData ? result.docData.title : 'เอกสาร'
+          });
+
+          try { speak(result.text.substring(0, 200)); } catch(e) {}
+
+          var sub = document.getElementById('header-subtitle');
+          if (sub) sub.textContent = 'ออนไลน์ - ' + (result.intent || 'ready');
+
+          if (attachedFiles.length > 0) {
+            DataStore.addAttachment(text, attachedFiles);
+            attachedFiles = [];
+            renderAttachedFiles();
+          }
+
+          isProcessing = false;
+        }, 500);
+      }).catch(function(err) {
+        clearTimeout(safetyTimer);
+        console.error('Process error:', err);
+        removeThinking();
+        addMessage('ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่', 'ai');
+        isProcessing = false;
+      });
+    } catch(e) {
+      clearTimeout(safetyTimer);
+      console.error('Process threw error:', e);
       removeThinking();
       addMessage('ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่', 'ai');
       isProcessing = false;
-    });
+    }
   } else {
     setTimeout(function() {
       removeThinking();

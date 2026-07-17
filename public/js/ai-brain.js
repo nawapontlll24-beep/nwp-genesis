@@ -264,28 +264,31 @@ var AIBrain = {
   // ==========================================
   process: function(text, callbacks) {
     var self = this;
-    var intent = this.classifyIntent(text);
-    var route = Router.analyze(text);
-    var deptResult = Router.findDepartment(text, intent.type);
-    var thinkingSteps = Router.createThinkingSteps(text, intent.type, deptResult);
 
-    // ส่ง thinking steps ให้ UI
-    if (callbacks && callbacks.onThinking) {
-      callbacks.onThinking(thinkingSteps);
-    }
+    try {
+      var intent = this.classifyIntent(text);
+      var route = Router.analyze(text);
+      var deptResult = Router.findDepartment(text, intent.type);
+      var thinkingSteps = Router.createThinkingSteps(text, intent.type, deptResult);
 
-    // บันทึก conversation
-    this.memory.conversations.push({
-      user: text,
-      intent: intent.type,
-      timestamp: new Date().toISOString()
-    });
-    this.memory.recentTopics.push(text);
-    this.saveMemory();
+      // ส่ง thinking steps ให้ UI
+      if (callbacks && callbacks.onThinking) {
+        callbacks.onThinking(thinkingSteps);
+      }
 
-        // ====== ประมวลผลตาม intent ======
-        return new Promise(function(resolve) {
-          setTimeout(function() {
+      // บันทึก conversation
+      this.memory.conversations.push({
+        user: text,
+        intent: intent.type,
+        timestamp: new Date().toISOString()
+      });
+      this.memory.recentTopics.push(text);
+      this.saveMemory();
+
+      // ====== ประมวลผลตาม intent ======
+      return new Promise(function(resolve) {
+        setTimeout(function() {
+          try {
             var result;
 
             if (intent.type === 'ask_question') {
@@ -300,40 +303,66 @@ var AIBrain = {
               result = self.handleUnknown(text);
             }
 
-        // เพิ่มข้อมูล intent ลงผลลัพธ์
-        result.intent = intent.type;
-        result.confidence = intent.confidence;
-        result.thinkingSteps = thinkingSteps;
+            // เพิ่มข้อมูล intent ลงผลลัพธ์
+            result.intent = intent.type;
+            result.confidence = intent.confidence;
+            result.thinkingSteps = thinkingSteps;
 
-        resolve(result);
-      }, 800); // จำลองความคิด 800ms
-    });
+            resolve(result);
+          } catch(innerErr) {
+            console.error('Process inner error:', innerErr);
+            resolve({
+              type: 'error',
+              text: 'ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่',
+              source: 'Genesis',
+              intent: 'error',
+              confidence: 0,
+              canDownload: false
+            });
+          }
+        }, 800); // จำลองความคิด 800ms
+      });
+    } catch(e) {
+      console.error('Process outer error:', e);
+      return Promise.resolve({
+        type: 'error',
+        text: 'ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่',
+        source: 'Genesis',
+        intent: 'error',
+        confidence: 0,
+        canDownload: false
+      });
+    }
   },
 
   // ==========================================
   // จัดการคำถาม (Q&A)
   // ==========================================
   handleQuestion: function(text, deptResult) {
-    if (deptResult.source === 'knowledge_base') {
-      var formatted = KnowledgeBase.formatAnswer(deptResult.data);
-      return {
-        type: 'answer',
-        text: formatted,
-        source: deptResult.data[0] ? deptResult.data[0].source : 'Knowledge Base',
-        hasDocument: false,
-        canDownload: false
-      };
-    }
+    try {
+      if (deptResult.source === 'knowledge_base') {
+        var formatted = KnowledgeBase.formatAnswer(deptResult.data);
+        return {
+          type: 'answer',
+          text: formatted,
+          source: deptResult.data[0] ? deptResult.data[0].source : 'Knowledge Base',
+          hasDocument: false,
+          canDownload: false
+        };
+      }
 
-    // ค้นหาจากแผนก
-    if (deptResult.dept) {
-      return {
-        type: 'answer',
-        text: '📚 ' + deptResult.dept.name + '\n\n' + deptResult.dept.desc + '\n\ncapabilities: ' + deptResult.dept.capabilities.join(', '),
-        source: deptResult.dept.name,
-        hasDocument: false,
-        canDownload: false
-      };
+      // ค้นหาจากแผนก
+      if (deptResult.dept) {
+        return {
+          type: 'answer',
+          text: '📚 ' + deptResult.dept.name + '\n\n' + deptResult.dept.desc + '\n\nความสามารถ: ' + deptResult.dept.capabilities.join(', '),
+          source: deptResult.dept.name,
+          hasDocument: false,
+          canDownload: false
+        };
+      }
+    } catch(e) {
+      console.error('handleQuestion error:', e);
     }
 
     // ถ้าไม่พบ
