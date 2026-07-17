@@ -71,15 +71,18 @@ body {
 .app {
   position: relative;
   z-index: 2;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .app-body {
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-height: 0;
 }
 
 .chat-area {
@@ -209,8 +212,7 @@ body {
   background: linear-gradient(180deg, rgba(0, 10, 20, 0.95) 0%, rgba(0, 10, 20, 0.8) 100%);
   border-bottom: 1px solid var(--border-glow);
   backdrop-filter: blur(20px);
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 100;
 }
 
@@ -1165,16 +1167,8 @@ body {
    Desktop Responsive
    ========================================== */
 @media (min-width: 768px) {
-  .app { max-width: 1200px; }
-  .header { padding: 14px 32px; }
+  .header { padding: 14px 24px; }
   .header-info h1 { font-size: 24px; }
-  .main-content { padding: 20px 32px; }
-  .ai-face { width: 140px; height: 140px; }
-  .ai-eye { width: 22px; height: 22px; top: 42px; }
-  .ai-eye.left { left: 36px; }
-  .ai-eye.right { right: 36px; }
-  .ai-mouth { bottom: 40px; width: 42px; }
-  .ai-speech { max-width: 520px; }
   .agent-grid { grid-template-columns: repeat(4, 1fr); }
   .dashboard-grid { grid-template-columns: repeat(4, 1fr); }
   .dashboard-grid .stat-box:nth-child(1) { grid-column: span 1; }
@@ -1182,10 +1176,8 @@ body {
   .dashboard-grid .stat-box:nth-child(3) { grid-column: span 1; }
   .dashboard-grid .stat-box:nth-child(4) { grid-column: span 1; }
   .chat-msg { max-width: 65%; }
-  .chat-messages { max-height: calc(100vh - 280px); }
   .stat-number { font-size: 32px; }
   .stat-label { font-size: 12px; }
-  .tab-content { max-height: calc(100vh - 260px); }
 }
 @media (min-width: 1024px) {
   .header { padding: 16px 24px; }
@@ -1228,20 +1220,24 @@ body {
   .metric-label { font-size: 8px; }
 }
 
-/* Sidebar responsive: phone → bottom floating */
+/* Sidebar responsive: phone → top bar */
 @media (max-width: 560px) {
   .app-body { flex-direction: column; }
   .ai-sidebar {
     width: 100%;
-    max-height: none;
+    flex-shrink: 0;
+    max-height: 100px;
     border-left: none;
     border-top: 1px solid var(--border-glow);
     order: -1;
+    overflow: hidden;
   }
   .ai-sidebar-inner {
     flex-direction: row;
-    padding: 10px 12px;
-    gap: 12px;
+    padding: 8px 12px;
+    gap: 10px;
+    height: 100%;
+    align-items: center;
   }
   .ai-face-wrap { width: 60px; height: 60px; flex-shrink: 0; }
   .ai-face { width: 60px; height: 60px; }
@@ -1462,6 +1458,8 @@ body {
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0;
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
 /* Tab in input area */
@@ -1473,7 +1471,6 @@ body {
 .tab-content.active {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   overflow-y: auto;
   padding: 4px 0;
 }
