@@ -752,6 +752,7 @@ document.addEventListener('DOMContentLoaded', function() {
   try { initMatrixRain(); } catch(e) { console.warn('Matrix rain error:', e); }
   try { initVoice(); } catch(e) { console.warn('Voice init error:', e); }
   try { AIBrain.init(); } catch(e) { console.warn('AIBrain init error:', e); }
+  try { DataStore.syncFromCloud(); } catch(e) { console.warn('Cloud sync error:', e); }
 
   var btnSend = document.getElementById('btn-send');
   if (btnSend) btnSend.addEventListener('click', sendMessage);

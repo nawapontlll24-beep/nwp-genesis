@@ -1,7 +1,22 @@
 // ==========================================
-// GENESIS - Data Store v2
-// ระบบจัดการข้อมูลทั้งหมด
+// GENESIS - Data Store v3
+// Cloud Database (Supabase) + Local Backup
 // ==========================================
+
+var SUPABASE_URL = 'https://uadmalkxupaugjlllbia.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_0VmoJ7qMk-6wgUre6pfWcg__dvRZle1';
+
+var _supabase = null;
+var _useCloud = false;
+
+function _initSupabase() {
+  if (_supabase) return _supabase;
+  if (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
+    _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    _useCloud = true;
+  }
+  return _supabase;
+}
 
 var DataStore = {
   _get: function(key) {
@@ -19,6 +34,84 @@ var DataStore = {
 
   _generateId: function() {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+  },
+
+  // ==========================================
+  // Cloud Sync
+  // ==========================================
+  syncFromCloud: async function() {
+    var client = _initSupabase();
+    if (!client) return;
+    try {
+      var tables = ['documents', 'commands', 'notifications'];
+      var keys = ['documents', 'commands', 'notifications'];
+      for (var i = 0; i < tables.length; i++) {
+        var result = await client.from(tables[i]).select('*');
+        if (result.data && result.data.length > 0) {
+          var local = this._get(keys[i]);
+          var localIds = {};
+          local.forEach(function(item) { localIds[item.id] = true; });
+          result.data.forEach(function(row) {
+            if (!localIds[row.id]) {
+              var mapped = {
+                id: row.id,
+                type: row.type,
+                title: row.title,
+                content: row.content,
+                dept: row.dept,
+                deptId: row.dept_id,
+                mainDeptId: row.main_dept_id,
+                status: row.status,
+                teacherName: row.teacher_name,
+                schoolName: row.school_name,
+                url: row.url,
+                createdAt: row.created_at,
+                updatedAt: row.updated_at
+              };
+              local.push(mapped);
+            }
+          });
+          this._set(keys[i], local);
+        }
+      }
+    } catch (e) {
+      console.warn('Cloud sync failed:', e.message);
+    }
+  },
+
+  _pushToCloud: async function(table, data) {
+    var client = _initSupabase();
+    if (!client) return;
+    try {
+      var row = {
+        id: data.id,
+        type: data.type || null,
+        title: data.title || null,
+        content: data.content || null,
+        dept: data.dept || null,
+        dept_id: data.deptId || null,
+        main_dept_id: data.mainDeptId || null,
+        status: data.status || null,
+        teacher_name: data.teacherName || null,
+        school_name: data.schoolName || null,
+        url: data.url || null,
+        created_at: data.createdAt || new Date().toISOString(),
+        updated_at: data.updatedAt || new Date().toISOString()
+      };
+      await client.from(table).upsert(row, { onConflict: 'id' });
+    } catch (e) {
+      console.warn('Cloud push failed:', e.message);
+    }
+  },
+
+  _deleteFromCloud: async function(table, id) {
+    var client = _initSupabase();
+    if (!client) return;
+    try {
+      await client.from(table).delete().eq('id', id);
+    } catch (e) {
+      console.warn('Cloud delete failed:', e.message);
+    }
   },
 
   // ==========================================
@@ -42,6 +135,7 @@ var DataStore = {
     };
     docs.push(doc);
     this._set('documents', docs);
+    this._pushToCloud('documents', doc);
     return doc;
   },
 
@@ -76,15 +170,17 @@ var DataStore = {
     if (idx !== -1) {
       docs[idx] = Object.assign(docs[idx], updates, { updatedAt: new Date().toISOString() });
       this._set('documents', docs);
+      this._pushToCloud('documents', docs[idx]);
       return docs[idx];
     }
     return null;
   },
 
   deleteDocument: function(id) {
-    var docs = this._get('commands');
+    var docs = this._get('documents');
     var filtered = docs.filter(function(d) { return d.id !== id; });
     this._set('documents', filtered);
+    this._deleteFromCloud('documents', id);
   },
 
   // ==========================================
@@ -104,6 +200,7 @@ var DataStore = {
     };
     commands.push(task);
     this._set('commands', commands);
+    this._pushToCloud('commands', task);
     return task;
   },
 
@@ -131,6 +228,7 @@ var DataStore = {
       commands[idx].status = 'completed';
       commands[idx].completedAt = new Date().toISOString();
       this._set('commands', commands);
+      this._pushToCloud('commands', commands[idx]);
     }
   },
 
@@ -154,6 +252,7 @@ var DataStore = {
     };
     notifs.push(notif);
     this._set('notifications', notifs);
+    this._pushToCloud('notifications', notif);
     return notif;
   },
 
@@ -177,6 +276,7 @@ var DataStore = {
     if (idx !== -1) {
       notifs[idx].read = true;
       this._set('notifications', notifs);
+      this._pushToCloud('notifications', notifs[idx]);
     }
   },
 
@@ -217,7 +317,6 @@ var DataStore = {
       return d.createdAt && d.createdAt.substring(0, 7) === thisMonth;
     });
 
-    // แยกตามแผนก
     var deptStats = {};
     var allSubs = Departments.getAllSubs();
     allSubs.forEach(function(sub) {
@@ -253,11 +352,11 @@ var DataStore = {
   },
 
   // ==========================================
-  // Export ข้อมูล (สำหรับ backup)
+  // Export/Import
   // ==========================================
   exportAll: function() {
     return {
-      version: '2.0',
+      version: '3.0',
       exportDate: new Date().toISOString(),
       documents: this._get('documents'),
       commands: this._get('commands'),
@@ -267,20 +366,26 @@ var DataStore = {
     };
   },
 
-  // ==========================================
-  // Import ข้อมูล (สำหรับ restore)
-  // ==========================================
   importAll: function(data) {
-    if (data.documents) this._set('documents', data.documents);
-    if (data.commands) this._set('commands', data.commands);
-    if (data.notifications) this._set('notifications', data.notifications);
+    if (data.documents) {
+      this._set('documents', data.documents);
+      var self = this;
+      data.documents.forEach(function(d) { self._pushToCloud('documents', d); });
+    }
+    if (data.commands) {
+      this._set('commands', data.commands);
+      var self2 = this;
+      data.commands.forEach(function(c) { self2._pushToCloud('commands', c); });
+    }
+    if (data.notifications) {
+      this._set('notifications', data.notifications);
+      var self3 = this;
+      data.notifications.forEach(function(n) { self3._pushToCloud('notifications', n); });
+    }
     if (data.memory) localStorage.setItem('genesis_memory', JSON.stringify(data.memory));
     if (data.workflows) localStorage.setItem('genesis_workflows', JSON.stringify(data.workflows));
   },
 
-  // ==========================================
-  // ล้างข้อมูลทั้งหมด
-  // ==========================================
   clearAll: function() {
     var keys = ['documents', 'commands', 'notifications'];
     keys.forEach(function(key) {
