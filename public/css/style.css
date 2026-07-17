@@ -946,17 +946,32 @@ body {
    Desktop Responsive
    ========================================== */
 @media (min-width: 768px) {
-  .app { max-width: 720px; }
-  .header { padding: 14px 24px; }
-  .header-info h1 { font-size: 22px; }
-  .main-content { padding: 16px 24px; }
-  .ai-face { width: 120px; height: 120px; }
-  .ai-eye { width: 20px; height: 20px; top: 36px; }
-  .ai-eye.left { left: 30px; }
-  .ai-eye.right { right: 30px; }
-  .ai-mouth { bottom: 34px; width: 36px; }
-  .ai-speech { max-width: 440px; }
-  .agent-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .app { max-width: 1200px; }
+  .header { padding: 14px 32px; }
+  .header-info h1 { font-size: 24px; }
+  .main-content { padding: 20px 32px; }
+  .ai-face { width: 140px; height: 140px; }
+  .ai-eye { width: 22px; height: 22px; top: 42px; }
+  .ai-eye.left { left: 36px; }
+  .ai-eye.right { right: 36px; }
+  .ai-mouth { bottom: 40px; width: 42px; }
+  .ai-speech { max-width: 520px; }
+  .agent-grid { grid-template-columns: repeat(4, 1fr); }
+  .dashboard-grid { grid-template-columns: repeat(4, 1fr); }
+  .dashboard-grid .stat-box:nth-child(1) { grid-column: span 1; }
+  .dashboard-grid .stat-box:nth-child(2) { grid-column: span 1; }
+  .dashboard-grid .stat-box:nth-child(3) { grid-column: span 1; }
+  .dashboard-grid .stat-box:nth-child(4) { grid-column: span 1; }
+  .chat-msg { max-width: 65%; }
+  .chat-messages { max-height: calc(100vh - 280px); }
+  .stat-number { font-size: 32px; }
+  .stat-label { font-size: 12px; }
+  .tab-content { max-height: calc(100vh - 260px); }
+}
+@media (min-width: 1024px) {
+  .app { max-width: 1400px; }
+  .main-content { padding: 24px 48px; }
+  .header { padding: 16px 48px; }
 }
 
 /* Small phones */
@@ -1245,6 +1260,12 @@ body {
   border-radius: 12px;
   padding: 14px;
   text-align: center;
+  transition: all 0.3s ease;
+}
+.stat-box:hover {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.15), inset 0 0 20px rgba(0, 212, 255, 0.05);
+  transform: translateY(-2px);
 }
 .stat-icon { font-size: 24px; color: var(--neon-blue); margin-bottom: 6px; }
 .stat-icon.pending { color: #f59e0b; }

@@ -53,9 +53,28 @@ function loadVoices() {
   try { window.speechSynthesis.getVoices(); } catch(e) {}
 }
 
+function preprocessThaiText(text) {
+  var t = text;
+  // ลบ emoji ทั้งหมด
+  t = t.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu, '');
+  // ลบ markdown/symbols
+  t = t.replace(/[#\-\*\"\`\~\^\[\]\{\}\<\>\/\\]/g, '');
+  // ขึ้นบรรทัดใหม่ -> จุด
+  t = t.replace(/[\n\r]+/g, '. ');
+  // ขยายชื่อชั้นเรียน
+  t = t.replace(/ป\.(\d)/g, 'ประถมศึกษาปีที่ $1');
+  t = t.replace(/ม\.(\d)/g, 'มัธยมศึกษาปีที่ $1');
+  // ลบจุดซ้อนกัน
+  t = t.replace(/\.{2,}/g, '.');
+  // ลดช่องว่างซ้อนกัน
+  t = t.replace(/\s{2,}/g, ' ');
+  t = t.trim();
+  return t;
+}
+
 function speak(text) {
   if (!voiceEnabled) return;
-  var clean = text.replace(/[\n\r]/g, ' ').replace(/[#\-\*\"\'\`\~\^\[\]\{\}\<\>]/g, '').replace(/[•✅📄📚🔍🏃💰📊💡❌🟢🎉]/g, '').trim();
+  var clean = preprocessThaiText(text);
   if (clean.length > 400) clean = clean.substring(0, 400) + '...';
 
   // หยุดเสียงเดิม
@@ -76,15 +95,15 @@ function speak(text) {
       var utter = new SpeechSynthesisUtterance(clean);
       utter.lang = 'th-TH';
       utter.voice = thaiVoice;
-      utter.rate = 0.9;
-      utter.pitch = 1.0;
+      utter.rate = 0.85;
+      utter.pitch = 0.95;
       utter.volume = 1.0;
       window.speechSynthesis.speak(utter);
       return;
     }
   }
 
-  // วิธี 2: ใช้ Server-side TTS (Windows SAPI Thai)
+  // วิธี 2: ใช้ Server-side TTS (Microsoft Edge Neural TTS)
   speakViaServer(clean);
 }
 
@@ -465,8 +484,23 @@ function createAndDownload(docData) {
   setTimeout(function() {
     removeThinking();
     DocGenerator.processCommand(docData.deptId || 'general', docData.content).then(function(result) {
-      addMessage('✅ ดาวน์โหลดเสร็จแล้วครับ', 'ai');
-      showToast('ดาวน์โหลดสำเร็จ', 'success');
+      if (result && result.url && result.url.indexOf('data:') === 0) {
+        var parts = result.url.split(',');
+        var mime = parts[0].match(/:(.*?);/)[1];
+        var bstr = atob(parts[1]);
+        var n = bstr.length;
+        var u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        var ext = '.docx';
+        if (mime.indexOf('sheet') !== -1 || mime.indexOf('excel') !== -1) ext = '.xlsx';
+        var filename = result.name || ('เอกสาร' + ext);
+        saveAs(new Blob([u8arr], { type: mime }), filename);
+        addMessage('✅ สร้างเอกสาร "' + filename + '" เรียบร้อยแล้วครับ ไฟล์กำลังดาวน์โหลด...', 'ai');
+        showToast('ดาวน์โหลด ' + filename, 'success');
+      } else {
+        addMessage('✅ สร้างเอกสารเรียบร้อยแล้วครับ', 'ai');
+        showToast('สร้างเอกสารสำเร็จ', 'success');
+      }
     }).catch(function(e) {
       addMessage('❌ เกิดข้อผิดพลาด: ' + e.message, 'ai');
     });

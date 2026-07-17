@@ -168,7 +168,7 @@ var DocGenerator = {
       var reader = new FileReader();
       reader.onloadend = function() {
         var base64 = reader.result;
-        DataStore.addDocument(filename, base64, type);
+        DataStore.saveDocument({ title: filename, content: base64, type: type || 'general_doc' });
         resolve({ name: filename, url: base64 });
       };
       reader.readAsDataURL(blob);
@@ -732,7 +732,7 @@ var DocGenerator = {
 
     var fileName = title + '_' + new Date().toISOString().substring(0, 10) + '.xlsx';
     XLSX.writeFile(wb, fileName);
-    DataStore.addDocument(fileName, '', 'Excel');
+    DataStore.saveDocument({ title: fileName, content: '', type: 'Excel' });
   },
 
   // ==================================================

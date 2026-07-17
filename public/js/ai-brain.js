@@ -450,11 +450,16 @@ var AIBrain = {
     var deptId = deptResult.subId || 'general';
     var mainId = deptResult.mainId || 'general';
 
-    // ข้อมูลสำหรับสร้างเอกสาร
+    // แยกข้อมูลจากคำสั่ง
+    var details = this._extractDocDetails(text, docType.type);
+
     var docData = {
       type: docType.type,
       title: docType.title,
+      subject: details.subject || text,
+      to: details.to || '',
       content: text,
+      purpose: details.purpose || '',
       dept: deptName,
       deptId: deptId,
       mainDeptId: mainId,
@@ -465,16 +470,20 @@ var AIBrain = {
       schoolName: KnowledgeBase.school_data.name
     };
 
-    // บันทึกลง DataStore
     DataStore.saveDocument(docData);
 
-    // สร้าง response
     var responseText = '✅ สร้างเอกสาร "' + docType.title + '" เรียบร้อยแล้วครับ\n\n';
     responseText += '📋 รายละเอียด:\n';
     responseText += '• ประเภท: ' + docType.label + '\n';
-    responseText += '• แผนก: ' + deptName + '\n';
-    responseText += '• สถานะ: พร้อมดาวน์โหลด\n\n';
-    responseText += '💡 กดปุ่ม "ดาวน์โหลด" เพื่อ save เป็นไฟล์ .docx';
+    if (details.subject) responseText += '• เรื่อง: ' + details.subject + '\n';
+    if (details.to) responseText += '• เรียน: ' + details.to + '\n';
+    if (details.grade) responseText += '• ชั้น: ' + details.grade + '\n';
+    if (details.topic) responseText += '• หัวข้อ: ' + details.topic + '\n';
+    responseText += '• แผนก: ' + deptName + '\n\n';
+    responseText += '💡 กดปุ่ม "ดาวน์โหลด .docx" เพื่อบันทึกไฟล์\n';
+    responseText += '💡 แก้ไขรายละเอียดได้โดยพิมพ์ใหม่ เช่น:\n';
+    responseText += '• "เขียนบันทึกข้อความ เรื่อง รายงานการประชุม วันที่ 17 ก.ค. 69"\n';
+    responseText += '• "เขียนหนังสือราชการ เรียน ท่าน ผอ. เรื่อง ขอจัดซื้อคอมพิวเตอร์"';
 
     return {
       type: 'document_created',
@@ -485,6 +494,36 @@ var AIBrain = {
       downloadType: docType.type,
       source: deptName
     };
+  },
+
+  _extractDocDetails: function(text, docType) {
+    var details = {};
+    var lower = text.toLowerCase();
+
+    // แยกเรื่อง
+    var subjectMatch = text.match(/เรื่อง\s*(.+?)(?:\s*ถึง|\s*เรียน|\s*วันที่|\s*จำนวน|$)/i);
+    if (subjectMatch) details.subject = subjectMatch[1].trim();
+
+    // แยกเรียนถึง
+    var toMatch = text.match(/(?:เรียน|ถึง)\s*(ท่าน|นาง|นาย|ดร\.?)\s*(.+?)(?:\s*เรื่อง|\s*วันที่|$)/i);
+    if (toMatch) details.to = toMatch[0].trim();
+
+    // แยกชั้นเรียน
+    var gradeMatch = text.match(/(ป\.\d|อนุบาล|ม\.\d)/i);
+    if (gradeMatch) details.grade = gradeMatch[0];
+
+    // แยกหัวข้อ/เนื้อหา
+    if (docType === 'teaching_plan') {
+      var topicMatch = text.match(/(?:เรื่อง|หัวข้อ)\s*(.+?)(?:\s*ชั้น|\s*ป\.|$)/i);
+      if (topicMatch) details.topic = topicMatch[1].trim();
+      else details.topic = text.replace(/แผนการสอน/g, '').replace(/สุขศึกษา/g, '').replace(/พลศึกษา/g, '').replace(/ป\.\d/g, '').replace(/เรื่อง/g, '').trim();
+    }
+
+    // แยกวัตถุประสงค์
+    var purposeMatch = text.match(/(?:เพื่อ|วัตถุประสงค์)\s*(.+?)(?:\s*$)/i);
+    if (purposeMatch) details.purpose = purposeMatch[1].trim();
+
+    return details;
   },
 
   // ==========================================
